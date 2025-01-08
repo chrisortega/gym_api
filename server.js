@@ -691,7 +691,6 @@ app.get('/users/:id',   async (req, res) => {
   });
 
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on PORT: ${PORT}`);
+app.listen(process.env.PORT || 3000, function () {
+  console.log("The server has started successfully");
 });
