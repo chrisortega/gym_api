@@ -233,7 +233,7 @@ app.get('/users/gym/:gymId', authenticateToken, (req, res) => {
   const gymId = req.params.gymId;
 
   const query = `
-    SELECT users.*
+    SELECT users.id, users.name, users.exp, gym.id as gym_id
     FROM users 
     JOIN gym ON users.gym_id = gym.id
     where gym_id = ?
@@ -335,9 +335,9 @@ app.get('/entries', authenticateToken, (req, res) => {
    return new Promise((resolve, reject) => {
      db.query(query, [admin_id], (err, results) => {
        if (err) {
-         return []
+        resolve(false);
        } else if (results.length === 0) {
-         return []
+        resolve(false);
        } else {
          resolve(results[0]); // Return the first result since ID is unique
        }
@@ -356,9 +356,9 @@ app.get('/entries', authenticateToken, (req, res) => {
     return new Promise((resolve, reject) => {
       db.query(query, [email], (err, results) => {
         if (err) {
-          return []
+          resolve([]);
         } else if (results.length === 0) {
-          return []
+          resolve([]);
         } else {
           resolve(results[0]); // Return the first result since ID is unique
         }
@@ -700,5 +700,5 @@ app.get('/users/:id',   async (req, res) => {
 
 
 app.listen(process.env.PORT || 3000, function () {
-  console.log("The server has started successfully");
+  console.log(`The server has started successfully: ${process.env.GYM_DB_SERVER} `);
 });
