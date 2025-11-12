@@ -1,159 +1,201 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Today's Gym Entries</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; }
-    .expired { background-color: #f8d7da; }
-    .active { background-color: #d1e7dd; }
-    .near-expiry { background-color: #fff3cd; }
-  </style>
-</head>
-<body class="p-4">
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2>🏋️ Today's Gym Entries</h2>
-      <a href="/dashboard" class="btn btn-outline-secondary">⬅ Back</a>
-    </div>
+{% extends "base.html" %}
 
-    <!-- Add new entry -->
-    <div class="input-group mb-4">
-      <input id="userIdInput" type="number" class="form-control" placeholder="Enter User ID to add entry">
-      <button id="addEntryBtn" class="btn btn-success">Add Entry</button>
-    </div>
+{% block title %}Entradas de Hoy - GymAdmin{% endblock %}
 
-    <!-- Entries table -->
-    <table class="table table-hover align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th scope="col">User ID</th>
-          <th scope="col">Name</th>
-          <th scope="col">Expiration</th>
-          <th scope="col">Status</th>
-          <th scope="col">Entries Today</th>
-        </tr>
-      </thead>
-      <tbody id="entriesContainer">
-        <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
-      </tbody>
-    </table>
+{% block content %}
+<style>
+  body { background-color: #f8f9fa; }
+
+  .expired { background-color: #f8d7da; }
+  .active { background-color: #d1e7dd; }
+  .near-expiry { background-color: #fff3cd; }
+
+  .user-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #dee2e6;
+  }
+
+  .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🏋️ Entradas de Hoy</h2>
+    <a href="/dashboard" class="btn btn-outline-secondary">⬅ Volver</a>
   </div>
 
-  <script>
-    const token = localStorage.getItem("token");
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const gymId = userData.gym_id;
-    const container = document.getElementById("entriesContainer");
+  <!-- Nueva entrada -->
+  <div class="card shadow-sm p-3 mb-4">
+    <h5 class="mb-3">Agregar nueva entrada</h5>
+    <div class="input-group">
+      <input id="userIdInput" type="number" class="form-control" placeholder="Ingresa el ID del usuario">
+      <button id="addEntryBtn" class="btn btn-success">Registrar Entrada</button>
+    </div>
+    <div id="alertContainer" class="mt-3"></div>
+  </div>
 
-    if (!token || !gymId) {
-      alert("Missing login or gym information. Please sign in again.");
-      window.location.href = "/";
-    }
+  <!-- Tabla de entradas -->
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th scope="col">ID Usuario</th>
+            <th scope="col">Usuario</th>
+            <th scope="col">Expiración</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Entradas Hoy</th>
+          </tr>
+        </thead>
+        <tbody id="entriesContainer">
+          <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-    document.getElementById("addEntryBtn").addEventListener("click", addEntry);
+<script>
+  const token = localStorage.getItem("token");
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const gymId = userData.gym_id;
+  const container = document.getElementById("entriesContainer");
 
-    // 🧠 Load entries on page load
-    window.addEventListener("DOMContentLoaded", loadEntries);
+  if (!token || !gymId) {
+    showAlert("Faltan datos de sesión. Por favor inicia sesión nuevamente.", "warning");
+    setTimeout(() => window.location.href = "/", 1500);
+  }
 
-    async function loadEntries() {
-      container.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Loading entries...</td></tr>`;
+  document.getElementById("addEntryBtn").addEventListener("click", addEntry);
+  window.addEventListener("DOMContentLoaded", loadEntries);
 
-      try {
-        const response = await fetch(`/api/entries/today/${gymId}?limit=200`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        container.innerHTML = "";
+  async function loadEntries() {
+    container.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Cargando entradas...</td></tr>`;
 
-        if (!Array.isArray(data) || data.length === 0) {
-          container.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No entries found for today.</td></tr>`;
-          return;
-        }
+    try {
+      const response = await fetch(`/api/entries/today/${gymId}?limit=200`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await response.json();
+      container.innerHTML = "";
 
-        // 🧩 Count entries per user
-        const entryCounts = {};
-        data.forEach(entry => {
-          entryCounts[entry.user_id] = (entryCounts[entry.user_id] || 0) + 1;
-        });
-
-        // 🧩 Deduplicate users
-        const uniqueEntries = [];
-        const seenUsers = new Set();
-
-        for (const user of data) {
-          if (!seenUsers.has(user.user_id)) {
-            seenUsers.add(user.user_id);
-            uniqueEntries.push(user);
-          }
-        }
-
-        // 🧱 Render unique users with entry counts
-        uniqueEntries.forEach(user => {
-          const expDate = new Date(user.exp);
-          const today = new Date();
-          const formattedDate = expDate.toLocaleDateString("en-CA");
-
-          let status = "Active";
-          let rowClass = "active";
-          if (expDate < today) {
-            status = "Expired";
-            rowClass = "expired";
-          } else if ((expDate - today) / (1000 * 3600 * 24) < 7) {
-            status = "Near Expiry";
-            rowClass = "near-expiry";
-          }
-
-          const entryCount = entryCounts[user.user_id] || 1;
-
-          container.innerHTML += `
-            <tr class="${rowClass}">
-              <td>${user.user_id}</td>
-              <td>
-                <a href="/user?user_id=${user.user_id}" class="fw-bold text-decoration-none">${user.name}</a>
-              </td>
-              <td>${formattedDate}</td>
-              <td>${status}</td>
-              <td><span class="badge bg-primary">${entryCount}</span></td>
-            </tr>
-          `;
-        });
-      } catch (err) {
-        console.error(err);
-        container.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error loading entries.</td></tr>`;
+      if (!Array.isArray(data) || data.length === 0) {
+        container.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No hay entradas registradas hoy.</td></tr>`;
+        return;
       }
-    }
 
-    // ➕ Add a new entry
-    async function addEntry() {
-      const userId = document.getElementById("userIdInput").value.trim();
-      if (!userId) return alert("Please enter a user ID.");
+      // Contar entradas por usuario
+      const entryCounts = {};
+      data.forEach(entry => {
+        entryCounts[entry.user_id] = (entryCounts[entry.user_id] || 0) + 1;
+      });
 
-      try {
-        const response = await fetch(`/api/entries`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ user_id: userId, gym_id: gymId })
-        });
-
-        if (response.ok) {
-          alert("Entry added successfully!");
-          document.getElementById("userIdInput").value = "";
-          loadEntries();
-        } else {
-          const err = await response.text();
-          alert(`Failed to add entry: ${err}`);
+      // Evitar duplicados
+      const seenUsers = new Set();
+      const uniqueEntries = [];
+      for (const user of data) {
+        if (!seenUsers.has(user.user_id)) {
+          seenUsers.add(user.user_id);
+          uniqueEntries.push(user);
         }
-      } catch (error) {
-        console.error(error);
-        alert("Error adding entry.");
       }
+
+      // Renderizar usuarios únicos
+      uniqueEntries.forEach(user => {
+        const expDate = new Date(user.exp);
+        const today = new Date();
+        const formattedDate = expDate.toLocaleDateString("es-MX");
+
+        let status = "Activo";
+        let rowClass = "active";
+        if (expDate < today) {
+          status = "Expirado";
+          rowClass = "expired";
+        } else if ((expDate - today) / (1000 * 3600 * 24) < 7) {
+          status = "Por expirar";
+          rowClass = "near-expiry";
+        }
+
+        const entryCount = entryCounts[user.user_id] || 1;
+        const userImg = user.image
+          ? `data:image/jpeg;base64,${user.image}`
+          : "https://via.placeholder.com/40?text=?";
+
+        container.innerHTML += `
+          <tr class="${rowClass}">
+            <td>${user.user_id}</td>
+            <td>
+              <div class="user-cell">
+                <img src="${userImg}" class="user-thumb" alt="Imagen de usuario">
+                <a href="/user?user_id=${user.user_id}" class="fw-bold text-decoration-none text-dark">
+                  ${user.name}
+                </a>
+              </div>
+            </td>
+            <td>${formattedDate}</td>
+            <td>${status}</td>
+            <td><span class="badge bg-primary">${entryCount}</span></td>
+          </tr>
+        `;
+      });
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error al cargar las entradas.</td></tr>`;
     }
-  </script>
-</body>
-</html>
+  }
+
+  async function addEntry() {
+    const userId = document.getElementById("userIdInput").value.trim();
+    if (!userId) {
+      showAlert("Por favor ingresa el ID del usuario.", "warning");
+      return;
+    }
+
+    const addEntryBtn = document.getElementById("addEntryBtn");
+    addEntryBtn.disabled = true;
+    addEntryBtn.textContent = "Registrando...";
+
+    try {
+      const response = await fetch(`/api/entries`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ user_id: userId, gym_id: gymId })
+      });
+
+      if (response.ok) {
+        showAlert("✅ Entrada registrada exitosamente.", "success");
+        document.getElementById("userIdInput").value = "";
+        loadEntries();
+      } else {
+        const err = await response.json();
+        showAlert(`❌ No se pudo registrar la entrada: ${err.error || "Error desconocido."}`, "danger");
+      }
+    } catch (error) {
+      console.error(error);
+      showAlert("⚠️ Error del servidor. Intenta nuevamente.", "danger");
+    } finally {
+      addEntryBtn.disabled = false;
+      addEntryBtn.textContent = "Registrar Entrada";
+    }
+  }
+
+  function showAlert(message, type) {
+    document.getElementById("alertContainer").innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+  }
+</script>
+{% endblock %}

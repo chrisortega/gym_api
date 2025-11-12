@@ -18,16 +18,42 @@ def index():
     return jsonify({"name":"api"})
 
 # ---------------- USERS ----------------
+from flask import request, jsonify
+import base64
+
 @api_bp.route("/users", methods=["POST"])
 def add_user():
-    data = request.json
-    name, exp, gym_id = data.get("name"), data.get("exp"), data.get("gym_id")
+    data = request.get_json()
+    name = data.get("name")
+    exp = data.get("exp")
+    gym_id = data.get("gym_id")
+    image_base64 = data.get("image")
+
+    # Decode image from base64 to binary if provided
+    image_blob = None
+    if image_base64:
+        try:
+            image_blob = base64.b64decode(image_base64)
+        except Exception as e:
+            return jsonify({"error": "Invalid image encoding", "details": str(e)}), 400
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO users (name, exp, gym_id) VALUES (%s, %s, %s)", (name, exp, gym_id))
+
+    if image_blob:
+        cursor.execute(
+            "INSERT INTO users (name, exp, gym_id, image) VALUES (%s, %s, %s, %s)",
+            (name, exp, gym_id, image_blob),
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO users (name, exp, gym_id) VALUES (%s, %s, %s)",
+            (name, exp, gym_id),
+        )
+
     conn.commit()
     return jsonify({"message": "User inserted successfully.", "id": cursor.lastrowid}), 200
+
 
 
 @api_bp.route("/users", methods=["PUT"])
@@ -48,11 +74,16 @@ def get_user(user_id):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT users.exp, users.id,users.name, gym.name AS gym_name
+        SELECT users.exp, users.id,users.name, gym.name as gym_name, users.image  
         FROM users JOIN gym ON users.gym_id = gym.id
         WHERE users.id = %s
     """, (user_id,))    
     user = cursor.fetchone()
+    
+    if user.get("image"):
+        user["image"] = base64.b64encode(user["image"]).decode("utf-8")
+    else:
+        user["image"] = None
     
     return jsonify(user or {}), 200
 
@@ -160,14 +191,118 @@ def get_gyms():
     return jsonify(cursor.fetchall()), 200
 
 
+@api_bp.route("/gym/<int:gym_id>", methods=["PUT"])
+@authenticate_token
+def update_gym(gym_id):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        name = request.form.get("name")
+        image_file = request.files.get("image")
+        back_file = request.files.get("back")
+        image_base64 = request.form.get("image")
+        back_base64 = request.form.get("back")
+
+        if not name and not image_file and not back_file and not image_base64 and not back_base64:
+            return jsonify({"error": "Nothing to update"}), 400
+
+        # Build dynamic query and params
+        updates = []
+        params = []
+
+        if name:
+            updates.append("name = %s")
+            params.append(name)
+
+        # Handle logo image (file)
+        if image_file:
+            image_data = image_file.read()
+            updates.append("image = %s")
+            params.append(image_data)
+        elif image_base64:
+            try:
+                if ";base64," in image_base64:
+                    image_data = base64.b64decode(image_base64.split(";base64,")[1])
+                    updates.append("image = %s")
+                    params.append(image_data)
+            except Exception as e:
+                return jsonify({"error": f"Invalid image base64: {str(e)}"}), 400
+
+        # Handle background image (file)
+        if back_file:
+            back_data = back_file.read()
+            updates.append("back = %s")
+            params.append(back_data)
+        elif back_base64:
+            try:
+                if ";base64," in back_base64:
+                    back_data = base64.b64decode(back_base64.split(";base64,")[1])
+                    updates.append("back = %s")
+                    params.append(back_data)
+            except Exception as e:
+                return jsonify({"error": f"Invalid back base64: {str(e)}"}), 400
+
+        if not updates:
+            return jsonify({"error": "No valid fields to update"}), 400
+
+        # Construct final query dynamically
+        query = f"UPDATE gym SET {', '.join(updates)} WHERE id = %s"
+        params.append(gym_id)
+
+        cursor.execute(query, params)
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Gym not found"}), 404
+
+        return jsonify({"message": "Gym updated successfully"}), 200
+
+    except Exception as e:
+        print("Error updating gym:", e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
 @api_bp.route("/gym/<int:gym_id>", methods=["GET"])
 @authenticate_token
 def get_gym(gym_id):
-    conn = get_db()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM gym WHERE id = %s", (gym_id,))
-    gym = cursor.fetchone()
-    return jsonify(gym or {}), 200
+    from db import get_db
+    import base64
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, name, admin_id, image, back FROM gym WHERE id = %s", (gym_id,))
+        gym = cursor.fetchone()
+
+        if not gym:
+            return jsonify({"error": "Gym not found"}), 404
+
+        # Convert image (BLOB) to base64 if present
+        if gym.get("image"):
+            gym["image"] = base64.b64encode(gym["image"]).decode("utf-8")
+        else:
+            gym["image"] = None
+
+     # Convert image (BLOB) to base64 if present
+        if gym.get("back"):
+            gym["back"] = base64.b64encode(gym["back"]).decode("utf-8")
+        else:
+            gym["back"] = None            
+
+        return jsonify(gym), 200
+
+    except Exception as e:
+        print("Error loading gym:", e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @api_bp.route("/users/gym/<int:gym_id>", methods=["GET"])
 @authenticate_token
@@ -212,67 +347,34 @@ def delete_user(user_id):
         conn.close()
 
 
-@api_bp.route("/update-user", methods=["POST"])
+@api_bp.route("/users/<int:user_id>", methods=["PUT"])
 @authenticate_token
-def update_user():
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
+def update_user(user_id):
+    data = request.get_json()
+    name = data.get("name")
+    exp = data.get("exp")
+    image_base64 = data.get("image")
 
-        id = request.form.get("id")
-        name = request.form.get("name")
-        exp = request.form.get("exp")
-        gym_id = request.form.get("gym_id")
-        image_base64 = request.form.get("image")
-        file = request.files.get("image")
+    image_blob = None
+    if image_base64:
+        import base64
+        image_blob = base64.b64decode(image_base64)
 
-        if not id or not name or not exp or not gym_id:
-            return jsonify({"error": "Missing required fields"}), 400
+    conn = get_db()
+    cursor = conn.cursor()
 
-        # default query & params
-        query = """
-            UPDATE users 
-            SET name = %s, exp = %s, gym_id = %s
-            WHERE id = %s
-        """
-        params = [name, exp, gym_id, id]
+    if image_blob:
+        cursor.execute("""
+            UPDATE users SET name=%s, exp=%s, image=%s WHERE id=%s
+        """, (name, exp, image_blob, user_id))
+    else:
+        cursor.execute("""
+            UPDATE users SET name=%s, exp=%s WHERE id=%s
+        """, (name, exp, user_id))
 
-        # if file upload exists
-        if file:
-            image_data = file.read()
-            query = """
-                UPDATE users 
-                SET name = %s, exp = %s, gym_id = %s, image = %s
-                WHERE id = %s
-            """
-            params = [name, exp, gym_id, image_data, id]
-        # if base64 image exists
-        elif image_base64:
-            matches = image_base64.split(";base64,")
-            if len(matches) != 2:
-                return jsonify({"error": "Invalid base64 image format"}), 400
-            image_data = base64.b64decode(matches[1])
-            query = """
-                UPDATE users 
-                SET name = %s, exp = %s, gym_id = %s, image = %s
-                WHERE id = %s
-            """
-            params = [name, exp, gym_id, image_data, id]
+    conn.commit()
+    return jsonify({"message": "User updated successfully"})
 
-        cursor.execute(query, params)
-        conn.commit()
-
-        if cursor.rowcount == 0:
-            return jsonify({"error": "User not found"}), 404
-
-        return jsonify({"message": "User updated successfully"}), 200
-
-    except Exception as e:
-        print("Error updating user:", e)
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
 
 
 

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Agregar Usuario - GymAdmin{% endblock %}
+
+{% block content %}
+<style>
+  body { background-color: #f8f9fa; }
+
+  .form-label {
+    font-weight: 600;
+  }
+
+  .img-preview {
+    width: 100%;
+    max-width: 220px;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid #dee2e6;
+    margin-bottom: 10px;
+  }
+</style>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>➕ Agregar Nuevo Usuario</h3>
+    <a href="/manage-users" class="btn btn-outline-secondary">⬅ Volver</a>
+  </div>
+
+  <div class="card shadow-sm p-4">
+    <form id="addUserForm" enctype="multipart/form-data">
+      <div class="row">
+        <div class="col-md-4 text-center mb-3">
+          <img id="previewImg" class="img-preview d-block mx-auto" src="https://via.placeholder.com/200?text=Vista+Previa" alt="Vista previa">
+          <input class="form-control mt-2" type="file" id="userImage" accept="image/*">
+        </div>
+
+        <div class="col-md-8">
+          <div class="mb-3">
+            <label for="userName" class="form-label">Nombre Completo</label>
+            <input type="text" class="form-control" id="userName" placeholder="Ingrese el nombre completo del usuario" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="userExp" class="form-label">Fecha de Expiración</label>
+            <input type="date" class="form-control" id="userExp" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">💾 Guardar Usuario</button>
+        </div>
+      </div>
+    </form>
+
+    <div id="message" class="text-center mt-3 text-info"></div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem("token");
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const gymId = userData.gym_id;
+
+  if (!token || !gymId) {
+    alert("Falta información de inicio de sesión. Por favor, inicia sesión nuevamente.");
+    window.location.href = "/";
+  }
+
+  const form = document.getElementById("addUserForm");
+  const msg = document.getElementById("message");
+  const userImage = document.getElementById("userImage");
+  const previewImg = document.getElementById("previewImg");
+  const userExp = document.getElementById("userExp");
+
+  // 📅 Establecer fecha por defecto (1 mes desde hoy)
+  document.addEventListener("DOMContentLoaded", () => {
+    const today = new Date();
+    today.setMonth(today.getMonth() + 1);
+    userExp.value = today.toISOString().split("T")[0];
+  });
+
+  // 🖼️ Vista previa de imagen
+  userImage.addEventListener("change", () => {
+    const file = userImage.files[0];
+    if (file) {
+      previewImg.src = URL.createObjectURL(file);
+    } else {
+      previewImg.src = "https://via.placeholder.com/200?text=Vista+Previa";
+    }
+  });
+
+  // 🧩 Envío del formulario
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.textContent = "⏳ Guardando usuario...";
+
+    const name = document.getElementById("userName").value.trim();
+    const exp = document.getElementById("userExp").value;
+    const imageFile = document.getElementById("userImage").files[0];
+
+    if (!name || !exp) {
+      msg.textContent = "⚠️ Por favor, completa todos los campos requeridos.";
+      return;
+    }
+
+    try {
+      let base64Image = null;
+
+      if (imageFile) {
+        base64Image = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(imageFile);
+        });
+      }
+
+      const payload = {
+        name,
+        exp,
+        gym_id: gymId,
+        image: base64Image,
+      };
+
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        msg.textContent = "✅ Usuario agregado correctamente.";
+        setTimeout(() => (window.location.href = "/manage-users"), 1000);
+      } else {
+        msg.textContent = data.error || "❌ Error al agregar usuario.";
+      }
+    } catch (err) {
+      console.error(err);
+      msg.textContent = "⚠️ Error de red. Intenta nuevamente.";
+    }
+  });
+</script>
+{% endblock %}

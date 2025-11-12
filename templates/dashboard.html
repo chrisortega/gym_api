@@ -1,119 +1,202 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GymAdmin Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; }
-    .dashboard-card {
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: transform 0.2s ease-in-out;
-    }
-    .dashboard-card:hover { transform: scale(1.02); }
-    .gym-image {
-      border-radius: 10px;
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-    }
-  </style>
-</head>
-<body class="p-4">
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2>🏋️‍♂️ GymAdmin Dashboard</h2>
-      <button class="btn btn-danger" id="logoutBtn">Logout</button>
+{% extends "base.html" %}
+{% block title %}Panel del Gimnasio - GymAdmin{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+    font-family: "Inter", sans-serif;
+  }
+
+  .dashboard-hero {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  }
+
+  .dashboard-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .dashboard-hero-content {
+    position: absolute;
+    bottom: 30px;
+    left: 40px;
+    color: white;
+    z-index: 2;
+  }
+
+  .gym-name {
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .gym-subtitle {
+    font-size: 1.1rem;
+    color: #e9ecef;
+  }
+
+  .dashboard-container {
+    max-width: 800px;
+    margin: -40px auto 0;
+    padding: 0 1rem 4rem;
+  }
+
+  .dashboard-card {
+    border-radius: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+    margin-bottom: 1.5rem;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+  }
+
+  .dashboard-card h5, .dashboard-card h4 {
+    color: #6c757d;
+    font-weight: 600;
+  }
+
+  .metric-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+  }
+
+  .small-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+
+  .gym-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 3;
+  }
+</style>
+
+<div id="heroSection" class="dashboard-hero">
+  <img id="gymThumb" class="gym-thumb" src="https://via.placeholder.com/60?text=Gym" alt="Gym image">
+  <div class="dashboard-hero-content">
+    <h2 id="gymName" class="gym-name">Cargando...</h2>
+    <p id="gymSubtitle" class="gym-subtitle">Bienvenido a tu panel de administración</p>
+  </div>
+</div>
+
+<div class="dashboard-container">
+
+  <div class="card dashboard-card text-center p-4" onclick="window.location='/manage-users'">
+    <div class="metric-icon text-primary mb-2">
+      <i class="bi bi-people-fill"></i>
     </div>
-
-    <!-- Gym Info Section -->
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card dashboard-card text-center p-3">
-          <h5 class="mb-2 text-muted">Gym</h5>
-          <img id="gymImage" class="gym-image mb-2" src="https://via.placeholder.com/400x200" alt="Gym image">
-          <h4 id="gymName" class="fw-bold"></h4>
-          <small>ID: <span id="gymId"></span></small>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <a href="/manage-users">
-        <div class="card dashboard-card text-center p-3" >
-          <h5 class="mb-2 text-muted">Users</h5>
-          <h2 id="userCount" class="text-primary fw-bold">0</h2>
-          <p class="text-muted">Active users in your gym</p>
-        </div>
-        </a>
-      </div>
-
-      <div class="col-md-4">
-        <a href="/entries">
-        <div class="card dashboard-card text-center p-3">
-          <h5 class="mb-2 text-muted">Entries Today</h5>
-          <h2 id="entriesCount" class="text-success fw-bold">0</h2>
-          <p class="text-muted">Total entries for today</p>
-        </div>
-    </a>
-      </div>
-    </div>
-
+    <h4>Usuarios Activos</h4>
+    <h2 id="userCount" class="text-primary fw-bold">0</h2>
+    <p class="small-text mb-0">Miembros registrados en tu gimnasio</p>
   </div>
 
-  <script>
-    const token = localStorage.getItem('token');
-    if (!token) window.location.href = '/';
+  <div class="card dashboard-card text-center p-4" onclick="window.location='/entries'">
+    <div class="metric-icon text-success mb-2">
+      <i class="bi bi-door-open-fill"></i>
+    </div>
+    <h4>Entradas de Hoy</h4>
+    <h2 id="entriesCount" class="text-success fw-bold">0</h2>
+    <p class="small-text mb-0">Visitas registradas en las últimas 24 horas</p>
+  </div>
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
-    });
+  <div id="editGymCard" class="card dashboard-card text-center p-4">
+    <div class="metric-icon text-warning mb-2">
+      <i class="bi bi-gear-fill"></i>
+    </div>
+    <h4>Administrar Gimnasio</h4>
+    <p class="small-text mb-0">Editar nombre, imagen y configuración</p>
+  </div>
 
-    async function loadDashboard() {
-      try {
-        const userData = JSON.parse(localStorage.getItem('user')) || {};
-        console.log(userData)
-        const gymId = userData.gym_id;
+</div>
 
-        if (!gymId) {
-          document.querySelector('.container').innerHTML = '<p class="text-danger text-center">No gym data found. Please log in again.</p>';
-          return;
-        }
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) window.location.href = '/';
 
-        // Fetch gym info
-        const gymRes = await fetch(`/api/gym/${gymId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const gym = await gymRes.json();
+  async function loadDashboard() {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user')) || {};
+      const gymId = userData.gym_id;
 
-        document.getElementById('gymName').textContent = gym.name || 'Unknown Gym';
-        document.getElementById('gymId').textContent = gym.id || '';
-        if (gym.image) {
-          document.getElementById('gymImage').src = `data:image/jpeg;base64,${gym.image}`;
-        }
-
-        // Fetch user count
-        const usersRes = await fetch(`/api/users/gym/${gymId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const users = await usersRes.json();
-        document.getElementById('userCount').textContent = users.length;
-
-        // Fetch today's entries
-        const entriesRes = await fetch(`/api/entries/today/${gymId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const entries = await entriesRes.json();
-        document.getElementById('entriesCount').textContent = entries.length;
-      } catch (error) {
-        console.error('Error loading dashboard:', error);
+      if (!gymId) {
+        document.querySelector('.dashboard-container').innerHTML =
+          '<p class="text-danger text-center mt-5">No se encontró la información del gimnasio. Por favor, inicia sesión nuevamente.</p>';
+        return;
       }
-    }
 
-    loadDashboard();
-  </script>
-</body>
-</html>
+      // 🏋️ Obtener información del gimnasio
+      const gymRes = await fetch(`/api/gym/${gymId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const gym = await gymRes.json();
+
+      // 🖼️ Imagen de fondo
+      const heroSection = document.getElementById('heroSection');
+      if (gym.back) {
+        heroSection.style.backgroundImage = `url('data:image/jpeg;base64,${gym.back}')`;
+      } else {
+        heroSection.style.backgroundImage = `url('/static/default-bg.jpg')`;
+      }
+
+      // 🧩 Imagen del gimnasio (logo)
+      if (gym.image) {
+        document.getElementById('gymThumb').src = `data:image/jpeg;base64,${gym.image}`;
+      } else {
+        document.getElementById('gymThumb').src = '/static/default-thumb.jpg';
+      }
+
+      document.getElementById('gymName').textContent = gym.name || 'Gimnasio Desconocido';
+      document.getElementById('gymSubtitle').textContent = gym.description || 'Panel de administración del gimnasio';
+
+      // 👥 Contar usuarios
+      const usersRes = await fetch(`/api/users/gym/${gym.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const users = await usersRes.json();
+      document.getElementById('userCount').textContent = users.length;
+
+      // 🗓️ Contar entradas de hoy
+      const entriesRes = await fetch(`/api/entries/today/${gym.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const entries = await entriesRes.json();
+      document.getElementById('entriesCount').textContent = entries.length;
+
+      // ⚙️ Enlace de edición del gimnasio
+      document.getElementById('editGymCard').addEventListener('click', () => {
+        window.location.href = `/edit-gym?gym_id=${gym.id}`;
+      });
+
+    } catch (error) {
+      console.error('Error cargando el panel:', error);
+      document.querySelector('.dashboard-container').innerHTML =
+        '<p class="text-danger text-center mt-5">Error al cargar los datos. Intenta nuevamente.</p>';
+    }
+  }
+
+  loadDashboard();
+</script>
+{% endblock %}

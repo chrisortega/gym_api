@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Gimnasio{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background-color: #f8f9fa;
+  }
+
+  .form-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+  }
+
+  .img-preview {
+    width: 100%;
+    max-width: 280px;
+    height: 280px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 2px solid #dee2e6;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 0 auto 1rem auto;
+    display: block;
+  }
+
+  .section-title {
+    font-weight: 600;
+    color: #495057;
+  }
+</style>
+
+<div class="container py-5">
+  <h2 class="fw-bold text-center text-primary mb-5">⚙️ Editar Gimnasio</h2>
+
+  <div id="errorAlert" class="alert alert-danger d-none"></div>
+  <div id="successAlert" class="alert alert-success d-none"></div>
+
+  <form id="gymForm" enctype="multipart/form-data" class="d-none">
+    
+    <!-- 🏋️ Logo -->
+    <div class="form-section">
+      <h5 class="section-title mb-3">Logo del Gimnasio</h5>
+      <img id="preview" class="img-preview" src="/static/default-gym.png" alt="Vista previa del logo" style="display:none;">
+      <input type="file" class="form-control mt-2" id="image" name="image" accept="image/*">
+    </div>
+
+    <!-- 🌄 Fondo -->
+    <div class="form-section">
+      <h5 class="section-title mb-3">Imagen de Fondo</h5>
+      <img id="backPreview" class="img-preview" src="/static/default-background.jpg" alt="Vista previa del fondo" style="display:none;">
+      <input type="file" class="form-control mt-2" id="back" name="back" accept="image/*">
+    </div>
+
+    <!-- 🏠 Nombre -->
+    <div class="form-section">
+      <h5 class="section-title mb-3">Nombre del Gimnasio</h5>
+      <input type="text" class="form-control" id="name" name="name" placeholder="Ingresa el nombre del gimnasio" required>
+    </div>
+
+    <div class="text-center mt-4">
+      <button type="submit" class="btn btn-primary px-5 me-2">💾 Guardar Cambios</button>
+      <a href="/dashboard" class="btn btn-outline-secondary px-4">⬅ Volver</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const gymId = params.get("gym_id");
+  const token = localStorage.getItem("token");
+
+  const errorAlert = document.getElementById("errorAlert");
+  const successAlert = document.getElementById("successAlert");
+  const form = document.getElementById("gymForm");
+
+  if (!gymId) {
+    errorAlert.textContent = "❌ Error: Falta gym_id en la URL (por ejemplo /edit-gym?gym_id=1)";
+    errorAlert.classList.remove("d-none");
+  } else {
+    form.classList.remove("d-none");
+    loadGymData(gymId);
+  }
+
+  async function loadGymData(id) {
+    try {
+      const res = await fetch(`/api/gym/${id}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (data.error || !data.name) {
+        errorAlert.textContent = data.error || "No se encontró el gimnasio.";
+        errorAlert.classList.remove("d-none");
+        return;
+      }
+
+      document.getElementById("name").value = data.name;
+
+      const logo = document.getElementById("preview");
+      logo.src = data.image ? `data:image/jpeg;base64,${data.image}` : "/static/default-gym.png";
+      logo.style.display = "block";
+
+      const backImg = document.getElementById("backPreview");
+      backImg.src = data.back ? `data:image/jpeg;base64,${data.back}` : "/static/default-background.jpg";
+      backImg.style.display = "block";
+
+    } catch (err) {
+      errorAlert.textContent = "⚠️ Error al cargar los datos del gimnasio.";
+      errorAlert.classList.remove("d-none");
+    }
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("name", document.getElementById("name").value);
+
+    const imageFile = document.getElementById("image").files[0];
+    if (imageFile) formData.append("image", imageFile);
+
+    const backFile = document.getElementById("back").files[0];
+    if (backFile) formData.append("back", backFile);
+
+    const res = await fetch(`/api/gym/${gymId}`, {
+      method: "PUT",
+      headers: { "Authorization": `Bearer ${token}` },
+      body: formData
+    });
+
+    const data = await res.json();
+    if (data.error) {
+      errorAlert.textContent = data.error;
+      errorAlert.classList.remove("d-none");
+      successAlert.classList.add("d-none");
+    } else {
+      successAlert.textContent = data.message || "✅ Cambios guardados correctamente.";
+      successAlert.classList.remove("d-none");
+      errorAlert.classList.add("d-none");
+    }
+  });
+
+  // 🖼️ Previews
+  document.getElementById("image").addEventListener("change", (e) => previewImage(e, "preview"));
+  document.getElementById("back").addEventListener("change", (e) => previewImage(e, "backPreview"));
+
+  function previewImage(e, targetId) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const preview = document.getElementById(targetId);
+        preview.src = reader.result;
+        preview.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+</script>
+{% endblock %}

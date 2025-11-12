@@ -51,5 +51,13 @@ def manage_users():
 def user_page():
     return render_template("user.html")
 
+@app.route("/edit-gym")
+def edit_gym_page():
+    return render_template("edit_gym.html")
+
+@app.route("/add-user")
+def add_user():
+    return render_template("add_user.html")
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000, debug=True)
