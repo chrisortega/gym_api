@@ -80,7 +80,7 @@
           <th scope="col" class="text-center">Foto</th>
           <th scope="col">Nombre</th>
           <th scope="col">Expira</th>
-          <th scope="col" class="text-center">Acciones</th>
+          
         </tr>
       </thead>
       <tbody id="usersTableBody"></tbody>
@@ -138,16 +138,14 @@
         const tr = document.createElement('tr');
         tr.className = rowClass;
         tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td class="text-center"><img src="${imgSrc}" class="user-img" alt="Foto del usuario"></td>
+          <td>${user.id}</td>
+          <td class="text-center"><img src="${imgSrc}" class="user-img" ></td>
           <td>${user.name}</td>
           <td>
             ${user.exp ? new Date(user.exp).toISOString().split("T")[0] : "N/A"}
             <span class="badge-status ${badgeClass} ms-2">${badgeText}</span>
           </td>
-          <td class="text-center action-btns">
-            <button class="btn btn-sm btn-outline-danger" onclick="eliminarUsuario(${user.id}, event)">Eliminar</button>
-          </td>
+
         `;
 
         tr.addEventListener('click', (e) => {
@@ -164,23 +162,7 @@
     }
   }
 
-  async function eliminarUsuario(id, e) {
-    e.stopPropagation();
-    if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
 
-    try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await res.json();
-      alert(result.message || result.error);
-      fetchUsers();
-    } catch (err) {
-      console.error("Error al eliminar usuario:", err);
-      alert("No se pudo eliminar el usuario.");
-    }
-  }
 
   // Cargar usuarios al inicio
   fetchUsers();

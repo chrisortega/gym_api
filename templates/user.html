@@ -53,6 +53,10 @@
       <tr><td colspan="2" class="text-center text-muted py-3">Cargando...</td></tr>
     </tbody>
   </table>
+  <a href="/biometrics" id="bioLink" class="btn btn-outline-primary mt-3">Biometrics</a>
+    
+
+
 </div>
 
 <!-- 🧩 Modal de Edición -->
@@ -85,6 +89,8 @@
       </div>
     </div>
   </div>
+
+  
 </div>
 
 <script>
@@ -92,10 +98,13 @@
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("user_id");
 
+
   if (!token || !userId) {
     alert("Acceso inválido — por favor regresa al panel principal.");
     window.location.href = "/entries";
+
   }
+  document.getElementById("bioLink").href = `/biometrics?user_id=${userId}`;
 
   window.addEventListener("DOMContentLoaded", cargarDetalles);
 
@@ -107,12 +116,35 @@
       const user = await userRes.json();
 
       const expDate = user.exp ? new Date(user.exp) : null;
+
+
+      if (expDate) {
+          const today = new Date();
+          today.setHours(0,0,0,0);
+
+          if (expDate < today) {
+              document.getElementById("userExp").classList.add("text-danger", "fw-bold");
+              document.getElementById("userExp").textContent += " (Expirado)";
+
+              // Optional: Banner de alerta si quieres
+              const userInfo = document.getElementById("userInfo");
+              userInfo.insertAdjacentHTML("beforeend", `
+                <div class="alert alert-danger mt-3">
+                  ⚠️ Este usuario está expirado.
+                </div>
+              `);
+          }
+      }
+      
       let formattedExp = expDate ? expDate.toLocaleDateString("es-MX") : "—";
 
       document.getElementById("userName").textContent = user.name || "Desconocido";
       document.getElementById("userExp").textContent = formattedExp;
       document.getElementById("editName").value = user.name || "";
       document.getElementById("editExp").value = expDate ? expDate.toISOString().slice(0, 10) : "";
+
+
+
 
       const img = document.getElementById("preview");
       if (user.image) {
@@ -191,5 +223,8 @@
       alert("❌ No se pudo actualizar el usuario.");
     }
   }
+
+  
+  
 </script>
 {% endblock %}

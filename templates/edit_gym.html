@@ -71,7 +71,7 @@
 
 <script>
   const params = new URLSearchParams(window.location.search);
-  const gymId = params.get("gym_id");
+  var gymId = params.get("gym_id");
   const token = localStorage.getItem("token");
 
   const errorAlert = document.getElementById("errorAlert");
@@ -79,12 +79,20 @@
   const form = document.getElementById("gymForm");
 
   if (!gymId) {
-    errorAlert.textContent = "❌ Error: Falta gym_id en la URL (por ejemplo /edit-gym?gym_id=1)";
-    errorAlert.classList.remove("d-none");
-  } else {
+
+    // Fallback → localStorage.user.gym_id
+    const stored = JSON.parse(localStorage.getItem("user") || "{}");    
+    if (stored.gym_id) {
+      gymId = stored.gym_id;
+    }
     form.classList.remove("d-none");
     loadGymData(gymId);
+  } else {
+    form.classList.remove("d-none");
+    loadGymData(gymId);    
   }
+
+
 
   async function loadGymData(id) {
     try {

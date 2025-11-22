@@ -10,6 +10,9 @@ import base64
 from flask import request, jsonify
 from utils.auth import authenticate_token
 from db import get_db
+from PIL import Image
+import io
+import base64
 
 
 api_bp = Blueprint("api", __name__)
@@ -18,8 +21,7 @@ def index():
     return jsonify({"name":"api"})
 
 # ---------------- USERS ----------------
-from flask import request, jsonify
-import base64
+
 
 @api_bp.route("/users", methods=["POST"])
 def add_user():
@@ -88,17 +90,18 @@ def get_user(user_id):
     return jsonify(user or {}), 200
 
 
+
+
 @api_bp.route("/entries/today/<int:gym_id>", methods=["GET"])
 @authenticate_token
 def get_today_entries(gym_id):
     from db import get_db
 
-    # Extract pagination params with defaults
     limit = int(request.args.get("limit", 10))
     offset = int(request.args.get("offset", 0))
 
     query = """
-        SELECT entries.*, users.name, users.exp,  users.id AS user_id
+        SELECT entries.*, users.name, users.exp, users.image, users.id AS user_id
         FROM entries
         JOIN users ON entries.users_id = users.id
         JOIN gym ON entries.gym_id = gym.id
@@ -111,13 +114,34 @@ def get_today_entries(gym_id):
         cursor = conn.cursor(dictionary=True)
         cursor.execute(query, (gym_id, limit, offset))
         results = cursor.fetchall()
-        print(results)
+
+        # Attach tiny thumbnail for each user entry
+        for row in results:
+            blob = row.get("image")
+
+            if blob:
+                img = Image.open(io.BytesIO(blob))
+
+                # Small fast thumbnail
+                img.thumbnail((48, 48))
+
+                buffer = io.BytesIO()
+                img.save(buffer, format="JPEG", quality=35)
+                tiny_bytes = buffer.getvalue()
+
+                row["image"] = base64.b64encode(tiny_bytes).decode("utf-8")
+            else:
+                row["image"] = None
+
         return jsonify(results), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
     finally:
         cursor.close()
         conn.close()
+
 
 
 @api_bp.route("/entries", methods=["POST"])
@@ -140,6 +164,12 @@ def add_entry():
         user = cursor.fetchone()
         if not user:
             return jsonify({"error": "Este usuario no está en este gimnasio"}), 426
+
+        # check if the user ius not expired
+        cursor.execute("SELECT id FROM users WHERE id = %s AND gym_id = %s AND exp >= NOW()", (user_id, gym_id))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({"error": "exte usuaio esta expirado"}), 426
 
         # Insert entry
         cursor.execute("INSERT INTO entries (users_id, gym_id) VALUES (%s, %s)", (user_id, gym_id))
@@ -181,6 +211,79 @@ def get_entries_by_user(user_id):
         conn.close()
 
 
+@api_bp.route("/biometrics/<int:user_id>", methods=["GET"])
+@authenticate_token
+def get_biometrics(user_id):
+    from db import get_db
+
+    query = """
+        SELECT 
+            biometrcs.id,
+            biometrcs.user_id,
+            biometrcs.peso,
+            biometrcs.altura,
+            biometrcs.cintura,
+            biometrcs.bmg,
+            biometrcs.date
+        FROM biometrcs
+        WHERE user_id = %s
+        ORDER BY date DESC
+    """
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(query, (user_id,))
+        biometrics = cursor.fetchall()
+        return jsonify(biometrics), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@api_bp.route("/biometrics", methods=["POST"])
+@authenticate_token
+def add_biometrics():
+    from db import get_db
+
+    data = request.get_json()
+
+    required = ["user_id", "peso", "altura", "cintura", "bmg"]
+    for field in required:
+        if field not in data:
+            return jsonify({"error": f"Missing field: {field}"}), 400
+
+    query = """
+        INSERT INTO biometrcs (user_id, peso, altura, cintura, bmg, date)
+        VALUES (%s, %s, %s, %s, %s, NOW())
+    """
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(query, (
+            data["user_id"],
+            data["peso"],
+            data["altura"],
+            data["cintura"],
+            data["bmg"]
+        ))
+        conn.commit()
+
+        return jsonify({"message": "Biometric data added successfully"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 # ---------------- GYMS ----------------
 @api_bp.route("/gyms", methods=["GET"])
 @authenticate_token
@@ -197,7 +300,6 @@ def update_gym(gym_id):
     try:
         conn = get_db()
         cursor = conn.cursor()
-
         name = request.form.get("name")
         image_file = request.files.get("image")
         back_file = request.files.get("back")
@@ -310,10 +412,10 @@ def get_users_by_gym(gym_id):
     from db import get_db
 
     query = """
-        SELECT users.id, users.name, users.exp, gym.id AS gym_id
+        SELECT users.id, users.name, users.exp, users.image, gym.id AS gym_id
         FROM users
         JOIN gym ON users.gym_id = gym.id
-        WHERE gym_id = %s
+        WHERE gym.id = %s
     """
 
     try:
@@ -321,30 +423,36 @@ def get_users_by_gym(gym_id):
         cursor = conn.cursor(dictionary=True)
         cursor.execute(query, (gym_id,))
         users = cursor.fetchall()
+
+        for user in users:
+            blob = user.get("image")
+
+            if blob:
+                # Convert blob → PIL image
+                img = Image.open(io.BytesIO(blob))
+
+                # Create tiny thumbnail
+                img.thumbnail((48, 48))   # small & fast
+
+                # Save back to bytes (compressed)
+                buffer = io.BytesIO()
+                img.save(buffer, format="JPEG", quality=35)
+                tiny_bytes = buffer.getvalue()
+
+                # Base64 encode thumbnail
+                user["image"] = base64.b64encode(tiny_bytes).decode("utf-8")
+            else:
+                user["image"] = None
+
         return jsonify(users), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
     finally:
         cursor.close()
         conn.close()
 
-@api_bp.route("/users/<int:user_id>", methods=["DELETE"])
-@authenticate_token
-def delete_user(user_id):
-    from db import get_db
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        conn.commit()
-        if cursor.rowcount == 0:
-            return jsonify({"error": "User not found"}), 404
-        return jsonify({"message": "User deleted successfully"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
 
 
 @api_bp.route("/users/<int:user_id>", methods=["PUT"])
@@ -386,22 +494,21 @@ def login():
     
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute(f"SELECT * FROM admin WHERE email = '{email}'")
+    cursor.execute(f"SELECT admin.password as password, admin.email as email, admin.id as user_id, gym.id as gym_id, gym.name as gym_name FROM admin inner join gym on admin.id = gym.admin_id WHERE email = '{email}' ")
     user = cursor.fetchone()
     
     
     if not user or not bcrypt.checkpw(password.encode(), user["password"].encode()):
         return jsonify({"error": "Invalid credentials"}), 401
 
-    token = generate_access_token(user["id"])
-    cursor.execute("SELECT * FROM gym WHERE admin_id = %s", (user["id"],))
-    gym = cursor.fetchone()
+
+    token = generate_access_token(user)
     return jsonify({
-        "userId": user["id"],
+        "userId": user["user_id"],
         "email": user["email"],
         "access_token": token,
-        "gym_id": gym["id"] if gym else None,
-        "gym_name": gym["name"] if gym else None,
+        "gym_id": user["gym_id"],
+        "gym_name": user["gym_name"],
         "token":token
     })
     

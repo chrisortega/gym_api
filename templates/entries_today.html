@@ -4,61 +4,89 @@
 
 {% block content %}
 <style>
-  body { background-color: #f8f9fa; }
-
-  .expired { background-color: #f8d7da; }
-  .active { background-color: #d1e7dd; }
-  .near-expiry { background-color: #fff3cd; }
+  body {
+    background-color: #f8f9fa;
+  }
 
   .user-thumb {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #dee2e6;
+    border: 1px solid #ccc;
   }
 
   .user-cell {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  table {
+    background-color: white;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    table {
+      font-size: 0.9rem;
+    }
+    th, td {
+      white-space: nowrap;
+    }
   }
 </style>
 
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>🏋️ Entradas de Hoy</h2>
-    <a href="/dashboard" class="btn btn-outline-secondary">⬅ Volver</a>
+<div class="p-3">
+  <div class="page-header">
+    <h3 class="m-0">🏋️ Entradas de Hoy</h3>
+    <a href="/dashboard" class="btn btn-outline-secondary btn-sm">⬅ Volver</a>
   </div>
 
-  <!-- Nueva entrada -->
-  <div class="card shadow-sm p-3 mb-4">
-    <h5 class="mb-3">Agregar nueva entrada</h5>
-    <div class="input-group">
-      <input id="userIdInput" type="number" class="form-control" placeholder="Ingresa el ID del usuario">
-      <button id="addEntryBtn" class="btn btn-success">Registrar Entrada</button>
-    </div>
-    <div id="alertContainer" class="mt-3"></div>
-  </div>
+<!-- Nueva entrada -->
+<style>
+  #userIdInput {
+    font-size: 2rem !important;
+    padding: 20px !important;
+    height: 80px;
+    text-align: center;
+  }
+</style>
 
-  <!-- Tabla de entradas -->
-  <div class="card shadow-sm">
-    <div class="card-body p-0">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th scope="col">ID Usuario</th>
-            <th scope="col">Usuario</th>
-            <th scope="col">Expiración</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Entradas Hoy</th>
-          </tr>
-        </thead>
-        <tbody id="entriesContainer">
-          <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
-        </tbody>
-      </table>
-    </div>
+<div class="mb-4">
+  <input id="userIdInput" type="number" class="form-control form-control-lg"
+         placeholder="Ingresa el ID del usuario y presiona ENTER">
+  <div id="alertContainer" class="mt-2"></div>
+</div>
+
+
+  <!-- Tabla -->
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th>ID Usuario</th>
+          <th>Usuario</th>
+          <th>Expiración</th>
+          <th>Entradas Hoy</th>
+        </tr>
+      </thead>
+      <tbody id="entriesContainer">
+        <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -73,11 +101,20 @@
     setTimeout(() => window.location.href = "/", 1500);
   }
 
-  document.getElementById("addEntryBtn").addEventListener("click", addEntry);
+  
   window.addEventListener("DOMContentLoaded", loadEntries);
 
+
+
+  document.getElementById("userIdInput").addEventListener("keyup", function (e) {
+      if (e.key === "Enter") {
+          const userId = this.value;
+          addEntry(); // replace with your real function
+      }
+  });
+
   async function loadEntries() {
-    container.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Cargando entradas...</td></tr>`;
+    container.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Cargando entradas...</td></tr>`;
 
     try {
       const response = await fetch(`/api/entries/today/${gymId}?limit=200`, {
@@ -87,7 +124,7 @@
       container.innerHTML = "";
 
       if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No hay entradas registradas hoy.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No hay entradas registradas hoy.</td></tr>`;
         return;
       }
 
@@ -107,93 +144,72 @@
         }
       }
 
-      // Renderizar usuarios únicos
+      // Renderizar filas
       uniqueEntries.forEach(user => {
         const expDate = new Date(user.exp);
-        const today = new Date();
         const formattedDate = expDate.toLocaleDateString("es-MX");
-
-        let status = "Activo";
-        let rowClass = "active";
-        if (expDate < today) {
-          status = "Expirado";
-          rowClass = "expired";
-        } else if ((expDate - today) / (1000 * 3600 * 24) < 7) {
-          status = "Por expirar";
-          rowClass = "near-expiry";
-        }
-
         const entryCount = entryCounts[user.user_id] || 1;
         const userImg = user.image
           ? `data:image/jpeg;base64,${user.image}`
           : "https://via.placeholder.com/40?text=?";
 
         container.innerHTML += `
-          <tr class="${rowClass}">
+          <tr>
             <td>${user.user_id}</td>
             <td>
               <div class="user-cell">
                 <img src="${userImg}" class="user-thumb" alt="Imagen de usuario">
-                <a href="/user?user_id=${user.user_id}" class="fw-bold text-decoration-none text-dark">
-                  ${user.name}
-                </a>
+                <a href="/user?user_id=${user.user_id}" class="fw-bold text-decoration-none text-dark">${user.name}</a>
               </div>
             </td>
             <td>${formattedDate}</td>
-            <td>${status}</td>
             <td><span class="badge bg-primary">${entryCount}</span></td>
           </tr>
         `;
       });
     } catch (err) {
       console.error(err);
-      container.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error al cargar las entradas.</td></tr>`;
+      container.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Error al cargar las entradas.</td></tr>`;
     }
   }
 
   async function addEntry() {
-    const userId = document.getElementById("userIdInput").value.trim();
-    if (!userId) {
-      showAlert("Por favor ingresa el ID del usuario.", "warning");
-      return;
-    }
-
-    const addEntryBtn = document.getElementById("addEntryBtn");
-    addEntryBtn.disabled = true;
-    addEntryBtn.textContent = "Registrando...";
-
-    try {
-      const response = await fetch(`/api/entries`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ user_id: userId, gym_id: gymId })
-      });
-
-      if (response.ok) {
-        showAlert("✅ Entrada registrada exitosamente.", "success");
-        document.getElementById("userIdInput").value = "";
-        loadEntries();
-      } else {
-        const err = await response.json();
-        showAlert(`❌ No se pudo registrar la entrada: ${err.error || "Error desconocido."}`, "danger");
-      }
-    } catch (error) {
-      console.error(error);
-      showAlert("⚠️ Error del servidor. Intenta nuevamente.", "danger");
-    } finally {
-      addEntryBtn.disabled = false;
-      addEntryBtn.textContent = "Registrar Entrada";
-    }
+  const userId = document.getElementById("userIdInput").value.trim();
+  if (!userId) {
+    showAlert("Por favor ingresa el ID del usuario.", "warning");
+    return;
   }
+
+  try {
+    const response = await fetch(`/api/entries`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ user_id: userId, gym_id: gymId })
+    });
+
+    if (response.ok) {
+      showAlert("✅ Entrada registrada exitosamente.", "success");
+      document.getElementById("userIdInput").value = "";
+      loadEntries();
+    } else {
+      const err = await response.json();
+      showAlert(`❌ No se pudo registrar la entrada: ${err.error || "Error desconocido."}`, "danger");
+    }
+  } catch (error) {
+    console.error(error);
+    showAlert("⚠️ Error del servidor. Intenta nuevamente.", "danger");
+  }
+}
+
 
   function showAlert(message, type) {
     document.getElementById("alertContainer").innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+      <div class="alert alert-${type} alert-dismissible fade show p-2" role="alert">
         ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
       </div>
     `;
   }

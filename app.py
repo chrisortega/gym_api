@@ -59,5 +59,9 @@ def edit_gym_page():
 def add_user():
     return render_template("add_user.html")
 
+@app.route("/biometrics")
+def biometrics():
+    return render_template("user_biometrics.html")
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3000, debug=True)
+    app.run(host="0.0.0.0", port=3001, debug=True)
