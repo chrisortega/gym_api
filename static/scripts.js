@@ -17,3 +17,8 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
       console.error('Error loading HTML:', error);
     }
   }
+
+
+  function call_api(endpoint){
+    
+  }

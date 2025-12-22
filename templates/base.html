@@ -2,55 +2,76 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title id="pageTitle">{% block title %}Gym{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+
   <style>
-    .gym-logo {
-      width: 35px;
-      height: 35px;
-      object-fit: cover;
-      border-radius: 50%;
-      margin-right: 10px;
-    }
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 65px;
+  background: #111;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 9999;
+}
+
+.mobile-nav-item {
+  flex: 1;
+  text-align: center;
+  color: white;
+  font-size: 0.8rem;
+  text-decoration: none;
+  padding-top: 6px;
+}
+
+.mobile-nav-item i {
+  font-size: 1.55rem;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.mobile-nav-item.active {
+  color: #0d6efd;
+}
+
+
+
+/* Space for bottom menu so content doesn't hide */
+body {
+  padding-bottom: 75px;
+}
+
   </style>
 </head>
 
+
+
+
 <body class="bg-light">
 
-  <!-- ✅ Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-    <div class="container-fluid">
-      <a id="gymNameBrand" class="navbar-brand fw-bold d-flex align-items-center" href="/">
-        <img id="gymLogo" src="/static/default-gym.png" alt="Logo" class="gym-logo">
-        <span id="gymNameText">🏋️ Cargando...</span>
-      </a>
+<!-- Bottom Mobile Navigation -->
+<nav id="mobileNav" class="mobile-nav ">
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-              aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegación">
-        <span class="navbar-toggler-icon"></span>
-      </button>
 
-      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-        <ul class="navbar-nav align-items-center" id="menuLinks">
 
-          <!-- Este será reemplazado dinámicamente por JS -->
-          <li class="nav-item">
-            <a id="authLink" class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
-              Iniciar sesión
-            </a>
-          </li>
 
-        </ul>
-      </div>
-    </div>
-  </nav>
 
-  <!-- ✅ Main Page Content -->
-  <div class="container mt-5 pt-4">
+  
+  
+</nav>
+
+
+  <!-- MAIN CONTENT -->
+  <div class="container"  >
     {% block content %}{% endblock %}
   </div>
+
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -58,13 +79,16 @@
     document.addEventListener("DOMContentLoaded", async () => {
       const token = localStorage.getItem("token");
       const userData = JSON.parse(localStorage.getItem("user") || "{}");
-      const gymNameText = document.getElementById("gymNameText");
-      const gymLogo = document.getElementById("gymLogo");
-      const pageTitle = document.getElementById("pageTitle");
-      const menuLinks = document.getElementById("menuLinks");
+
+      
+      
+      
+      const menuLinks = document.getElementById("mobileNav");
 
       let gymName = "Mi Gimnasio";
       let gymImage = "/static/default-gym.png";
+
+      
 
       if (token && userData.gym_id) {
         try {
@@ -75,55 +99,54 @@
           if (res.ok) {
             const gym = await res.json();
             gymName = gym.name || gymName;
-
-            if (gym.image) {
-              gymImage = `data:image/jpeg;base64,${gym.image}`;
-            }
+            if (gym.image) gymImage = `data:image/jpeg;base64,${gym.image}`;
           }
-        } catch (err) {
-          console.warn("No se pudo cargar el nombre o imagen del gimnasio:", err);
-        }
+        } catch {}
       }
 
-      // ⬆️ Actualizar header
-      gymNameText.textContent = ` ${gymName}`;
-      gymLogo.src = gymImage;
-      pageTitle.textContent = gymName;
+      
+      
+      
 
-      // 🔥 MENU DINÁMICO
+      /* Dynamic menu */
       if (token) {
         menuLinks.innerHTML = `
-          <li class="nav-item">
-            <a class="nav-link {% if '/usuarios' in request.path %}active{% endif %}" href="/manage-users">Usuarios</a>
-          </li>
+          <a href="/manage-users" class="mobile-nav-item">
+            <i class="bi bi-people-fill"></i>
+            <span>Usuarios</span>
+          </a>              
+            <a href="/entries" class="mobile-nav-item">
+            <i class="bi bi-door-open-fill"></i>
+            <span>Entradas</span>
+          </a>
 
-          <li class="nav-item">
-            <a class="nav-link {% if '/entradas' in request.path %}active{% endif %}" href="/entries">Entradas</a>
-          </li>
+            <a href="/edit-gym" class="mobile-nav-item">
+    <i class="bi bi-gear-fill"></i>
+    <span>Mi Gym</span>
+  </a>
 
-          <li class="nav-item">
-            <a class="nav-link {% if '/mi-gym' in request.path %}active{% endif %}" href="/edit-gym">Mi Gym</a>
-          </li>
-
-          <li class="nav-item">
-            <a id="authLink" class="nav-link text-danger fw-semibold" href="#">
-              Cerrar sesión
-            </a>
-          </li>
+              <a id="logoutBtn" class="mobile-nav-item">
+    <i class="bi bi-gear-fill"></i>
+    <span>Salir</span>
+  </a>
+          
         `;
-
-        document.getElementById("authLink").addEventListener("click", (e) => {
-          e.preventDefault();
-          logout();
-        });
+        document.getElementById("logoutBtn").onclick = logout;
       }
     });
+    
 
     function logout() {
+      
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/";
     }
+
+
+
+    
   </script>
+
 </body>
 </html>
