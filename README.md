@@ -317,19 +317,14 @@ gym_api/
 ├── static/
 │   ├── scripts.js          # Shared frontend JavaScript
 │   └── default-bg.jpg      # Default background image
-└── _legacy_node/           # Old Node.js/Express version (deprecated)
-    ├── server.js            # Legacy Express API server
-    ├── package.json         # Node.js dependencies
-    ├── package-lock.json    # Node.js lock file
-    └── node_modules/        # Node.js packages
+└── nginx.conf/             # Nginx configuration
 ```
 
 ---
 
 ## 📝 Notes
 
-- The **Flask app** (`app.py`) is the primary server. It serves both the HTML frontend (via Jinja2 templates) and the REST API (via the `/api` Blueprint) on **port 3001**.
-- The old Node.js/Express version has been moved to `_legacy_node/` and is **no longer in use**. Use `app.py` instead.
+- The **Flask app** (`app.py`) is the server. It serves both the HTML frontend (via Jinja2 templates) and the REST API (via the `/api` Blueprint) on **port 3001**.
 - User and gym images are stored as **binary BLOBs** in MySQL and transferred as **base64-encoded** strings via the API.
 - Admin passwords are hashed with **bcrypt** before storage.
 - JWT tokens expire after **1 day** and must be included as `Authorization: Bearer <token>` in API requests.
