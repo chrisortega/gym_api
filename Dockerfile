@@ -13,13 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy your app
 COPY . .
 
-# Expose Flask port
-EXPOSE 3000
+# Railway sets PORT dynamically
+ENV PORT=3000
+EXPOSE ${PORT}
 
-# Set environment variables
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_RUN_PORT=3000
-
-# Run the Flask app
-CMD ["flask", "run"]
+# Run with gunicorn for production
+CMD gunicorn --bind 0.0.0.0:${PORT} app:app

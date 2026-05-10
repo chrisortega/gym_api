@@ -6,5 +6,4 @@ PyJWT
 python-dotenv
 gunicorn
 requests
-python-dotenv
 Pillow
