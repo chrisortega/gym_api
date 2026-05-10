@@ -9,13 +9,23 @@ load_dotenv(override=True)
 
 
 app = Flask(__name__)
-CORS(app)
+
 
 db = get_db()
 
 # Register API Blueprint with prefix /api
+
 app.register_blueprint(api_bp, url_prefix="/api")
 
+
+CORS(
+    app,
+    resources={r"/api/*": {
+        "origins": "*",   # or "http://localhost:8100" for Ionic
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": "*"
+    }}
+)
 
 @app.route('/')
 def index():

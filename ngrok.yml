@@ -1,0 +1,7 @@
+version: "2"
+authtoken: "354Wjxu9AMssJnlQ520RZqhze29_7tCv6zXvau67NBEnb7F72" # Replace with your actual ngrok auth token
+tunnels:
+  web_tunnel:
+    addr: web:3000 # Forward traffic to the 'web' service on port 80 within the Docker network
+    proto: http
+    

@@ -49,21 +49,10 @@ body {
 
   </style>
 </head>
-
-
-
-
 <body class="bg-light">
 
-<!-- Bottom Mobile Navigation -->
 <nav id="mobileNav" class="mobile-nav ">
 
-
-
-
-
-  
-  
 </nav>
 
 
@@ -80,8 +69,7 @@ body {
       const token = localStorage.getItem("token");
       const userData = JSON.parse(localStorage.getItem("user") || "{}");
 
-      
-      
+  
       
       const menuLinks = document.getElementById("mobileNav");
 
@@ -133,6 +121,10 @@ body {
         `;
         document.getElementById("logoutBtn").onclick = logout;
       }
+
+
+        
+
     });
     
 
