@@ -120,16 +120,19 @@ def get_today_entries(gym_id):
             blob = row.get("image")
 
             if blob:
-                img = Image.open(io.BytesIO(blob))
+                try:
+                    img = Image.open(io.BytesIO(blob))
 
-                # Small fast thumbnail
-                img.thumbnail((48, 48))
+                    # Small fast thumbnail
+                    img.thumbnail((48, 48))
 
-                buffer = io.BytesIO()
-                img.save(buffer, format="JPEG", quality=35)
-                tiny_bytes = buffer.getvalue()
+                    buffer = io.BytesIO()
+                    img.save(buffer, format="JPEG", quality=35)
+                    tiny_bytes = buffer.getvalue()
 
-                row["image"] = base64.b64encode(tiny_bytes).decode("utf-8")
+                    row["image"] = base64.b64encode(tiny_bytes).decode("utf-8")
+                except Exception:
+                    row["image"] = None
             else:
                 row["image"] = None
 
@@ -428,19 +431,22 @@ def get_users_by_gym(gym_id):
             blob = user.get("image")
 
             if blob:
-                # Convert blob → PIL image
-                img = Image.open(io.BytesIO(blob))
+                try:
+                    # Convert blob → PIL image
+                    img = Image.open(io.BytesIO(blob))
 
-                # Create tiny thumbnail
-                img.thumbnail((48, 48))   # small & fast
+                    # Create tiny thumbnail
+                    img.thumbnail((48, 48))   # small & fast
 
-                # Save back to bytes (compressed)
-                buffer = io.BytesIO()
-                img.save(buffer, format="JPEG", quality=35)
-                tiny_bytes = buffer.getvalue()
+                    # Save back to bytes (compressed)
+                    buffer = io.BytesIO()
+                    img.save(buffer, format="JPEG", quality=35)
+                    tiny_bytes = buffer.getvalue()
 
-                # Base64 encode thumbnail
-                user["image"] = base64.b64encode(tiny_bytes).decode("utf-8")
+                    # Base64 encode thumbnail
+                    user["image"] = base64.b64encode(tiny_bytes).decode("utf-8")
+                except Exception:
+                    user["image"] = None
             else:
                 user["image"] = None
 
