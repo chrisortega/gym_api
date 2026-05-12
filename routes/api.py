@@ -524,20 +524,37 @@ def login():
 @api_bp.route("/reset-password", methods=["POST"])
 def reset_password():
     data = request.json
-    email, new_password, code = data.get("email"), data.get("password"), data.get("code")        
-    hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()    
-    
+    email = data.get("email")
+    new_password = data.get("password")
+    code = data.get("code")
 
-    conn = get_db()
-    cursor = conn.cursor()    
-    cursor.execute(f"UPDATE admin SET password='{hashed}' WHERE email='{email}' AND verify_code='{code}'")
-    conn.commit()
-    if cursor.rowcount == 0:
+    # Validate required fields
+    if not email or not new_password or not code:
+        return jsonify({"error": "Missing email, password, or code"}), 400
 
-        return jsonify({"error": "User not found"}), 404
-    cursor.execute(f"UPDATE admin SET verify_code=NULL WHERE email='{email}' AND verify_code='{code}'")
-    conn.commit()
-    return jsonify({"message": "Password updated successfully"}), 200
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Update password only if code matches AND has not expired
+        hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+        cursor.execute(
+            "UPDATE admin SET password = %s, verify_code = NULL, verify_code_exp = NULL "
+            "WHERE email = %s AND verify_code = %s AND verify_code_exp >= NOW()",
+            (hashed, email, code),
+        )
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Invalid or expired verification code"}), 400
+
+        return jsonify({"message": "Password updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 
 # --- Helper to generate random 6-digit code ---
@@ -549,10 +566,9 @@ def generate_verification_code(length=6):
 def send_password_code():
     data = request.get_json()
     email = data.get('email')
-    
 
     if not email:
-        return jsonify({'error': 'Missing email or id'}), 400
+        return jsonify({'error': 'Missing email'}), 400
 
     verification_code = generate_verification_code()
 
@@ -575,13 +591,14 @@ def send_password_code():
         query = """
             UPDATE `gyms`.`admin`
             SET `verify_code` = %s, `verify_code_exp` = DATE_ADD(NOW(), INTERVAL 2 HOUR)
-            WHERE  email = %s;
+            WHERE email = %s;
         """
         cursor.execute(query, (verification_code, email))
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({"code": "is sent on email", "code":verification_code}), 200
+        # TODO: Send code via email/SMS instead of returning it in the response
+        return jsonify({"message": "Verification code sent"}), 200
     except Exception as err:
         print("Database error:", err)
         return jsonify({'error': f'Database error. {err}'}), 500
