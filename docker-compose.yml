@@ -8,13 +8,5 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
- 
-  ngrok:
-    image: ngrok/ngrok:latest
-    ports:
-      - "4040:4040" # Expose ngrok's web interface for inspection
-    volumes:
-      - ./ngrok.yml:/etc/ngrok.yml # Mount the ngrok configuration file
     environment:
-      NGROK_AUTHTOKEN: 354Wjxu9AMssJnlQ520RZqhze29_7tCv6zXvau67NBEnb7F72 # Pass your ngrok auth token as an environment variable
-    command: start --all --config /etc/ngrok.yml # Start all tunnels defined in ngrok.yml
+      - GYM_DB_SERVER=host.docker.internal
