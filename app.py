@@ -1,7 +1,7 @@
 from flask import Flask, render_template
 from flask_cors import CORS
 from routes import all_blueprints
-from db import get_db
+
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(__name__)
 
 
-db = get_db()
+
 
 # Register all API Blueprints with prefix /api
 for bp in all_blueprints:
