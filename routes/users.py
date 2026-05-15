@@ -151,3 +151,49 @@ def update_user(user_id):
 
     conn.commit()
     return jsonify({"message": "User updated successfully"})
+
+@users_bp.route("/public/history/<int:user_id>", methods=["GET"])
+def get_public_user_history(user_id):
+    query_user = """
+        SELECT users.id, users.name, users.exp, users.image, gym.name as gym_name
+        FROM users 
+        JOIN gym ON users.gym_id = gym.id
+        WHERE users.id = %s
+    """
+    
+    query_entries = """
+        SELECT day 
+        FROM entries 
+        WHERE users_id = %s
+        ORDER BY day DESC
+    """
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get user details
+        cursor.execute(query_user, (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+            
+        if user.get("image"):
+            user["image"] = base64.b64encode(user["image"]).decode("utf-8")
+        else:
+            user["image"] = None
+            
+        # Get entries
+        cursor.execute(query_entries, (user_id,))
+        entries = cursor.fetchall()
+        user["entries"] = [entry["day"] for entry in entries]
+        
+        return jsonify(user), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+        
+    finally:
+        cursor.close()
+        conn.close()

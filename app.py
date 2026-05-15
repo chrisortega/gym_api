@@ -4,7 +4,7 @@ from routes import all_blueprints
 
 from dotenv import load_dotenv
 import os
-load_dotenv()
+load_dotenv(override=True)
 
 
 app = Flask(__name__)
@@ -71,6 +71,10 @@ def add_user():
 @app.route("/biometrics")
 def biometrics():
     return render_template("user_biometrics.html")
+
+@app.route("/myperfil")
+def user_history():
+    return render_template("user_history.html")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 3001))

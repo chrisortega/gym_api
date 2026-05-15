@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Entradas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-6 col-12">
+    <div class="card shadow">
+      <div class="card-body">
+        <h4 class="card-title text-center mb-4">Consultar Historial de Entradas</h4>
+        
+        <div class="mb-3">
+          <label for="userIdInput" class="form-label">ID de Usuario</label>
+          <input type="number" class="form-control" id="userIdInput" placeholder="Ingrese su ID" required>
+        </div>
+        <button id="searchBtn" class="btn btn-primary w-100">Buscar</button>
+
+        <div id="resultArea" class="mt-4" style="display: none;">
+          <div class="text-center">
+            <img id="userPicture" src="" alt="Foto" class="rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover; background: #eee;">
+            <h5 id="userName" class="mb-1"></h5>
+            <p class="text-muted mb-2" id="userGym"></p>
+            <span id="userExp" class="badge"></span>
+          </div>
+          
+          <hr>
+          <h6 class="mb-3">Historial de Entradas</h6>
+          <ul id="entriesList" class="list-group" style="max-height: 300px; overflow-y: auto;">
+          </ul>
+        </div>
+
+        <div id="errorArea" class="mt-3 text-danger text-center" style="display: none;"></div>
+        
+        <hr class="my-4">
+        <div class="text-center">
+          <a href="/" class="btn btn-outline-secondary w-100">Volver al login</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById("userIdInput").addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      document.getElementById("searchBtn").click();
+    }
+  });
+
+  document.getElementById("searchBtn").addEventListener("click", async () => {
+    const userId = document.getElementById("userIdInput").value.trim();
+    const resultArea = document.getElementById("resultArea");
+    const errorArea = document.getElementById("errorArea");
+    
+    if (!userId) return;
+    
+    resultArea.style.display = "none";
+    errorArea.style.display = "none";
+    document.getElementById("searchBtn").disabled = true;
+
+    try {
+      const res = await fetch(`/api/public/history/${userId}`);
+      if (!res.ok) {
+        throw new Error(res.status === 404 ? "Usuario no encontrado" : "Error al consultar la información");
+      }
+      
+      const data = await res.json();
+      
+      // Update UI
+      document.getElementById("userName").textContent = data.name;
+      document.getElementById("userGym").textContent = data.gym_name || "";
+      
+      const pic = document.getElementById("userPicture");
+      if (data.image) {
+        pic.src = `data:image/jpeg;base64,${data.image}`;
+      } else {
+        pic.src = "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22100%22%20height%3D%22100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20preserveAspectRatio%3D%22none%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23eeeeee%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%20fill%3D%22%23999999%22%20dy%3D%22.3em%22%20text-anchor%3D%22middle%22%3ESin%20foto%3C%2Ftext%3E%3C%2Fsvg%3E"; // default missing image
+      }
+      
+      const expDate = new Date(data.exp);
+      const isExpired = expDate < new Date();
+      const expBadge = document.getElementById("userExp");
+      expBadge.textContent = "Expira: " + expDate.toLocaleDateString();
+      expBadge.className = isExpired ? "badge bg-danger" : "badge bg-success";
+      
+      const entriesList = document.getElementById("entriesList");
+      entriesList.innerHTML = "";
+      if (data.entries && data.entries.length > 0) {
+        data.entries.forEach(entry => {
+          const li = document.createElement("li");
+          li.className = "list-group-item";
+          // Formatting date depending on type of 'day', assuming ISO string
+          const d = new Date(entry);
+          li.textContent = isNaN(d.getTime()) ? entry : d.toLocaleString();
+          entriesList.appendChild(li);
+        });
+      } else {
+        const li = document.createElement("li");
+        li.className = "list-group-item text-center text-muted";
+        li.textContent = "No hay entradas registradas.";
+        entriesList.appendChild(li);
+      }
+      
+      resultArea.style.display = "block";
+    } catch (err) {
+      errorArea.textContent = err.message;
+      errorArea.style.display = "block";
+    } finally {
+      document.getElementById("searchBtn").disabled = false;
+    }
+  });
+</script>
+{% endblock %}
