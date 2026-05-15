@@ -111,18 +111,6 @@ This starts the Flask app and an ngrok tunnel (web interface at `http://localhos
 
 ---
 
-## 🧪 Testing
-
-The application uses `pytest` for unit testing. The test files are located in the `tests/` directory.
-
-To run the tests, ensure your virtual environment is activated and use the following command from the project root:
-
-```bash
-pytest tests/
-```
-
----
-
 ## 📖 How to Use
 
 ### 1. Access the Application
