@@ -4,7 +4,7 @@ from routes import all_blueprints
 from db import get_db
 from dotenv import load_dotenv
 import os
-load_dotenv(override=True)
+load_dotenv()
 
 
 app = Flask(__name__)
