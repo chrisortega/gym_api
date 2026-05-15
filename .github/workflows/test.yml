@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -18,20 +17,8 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-        cache: 'pip' # caching pip dependencies
+        cache: 'pip'
         
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install pytest
-        
-    - name: Test with pytest
-      env:
-        SECRET_KEY: test_secret_key
-      run: |
-        # Using python -m prevents environment mismatch errors
-            # Update your dependency step to install the plugin
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -43,4 +30,3 @@ jobs:
         SECRET_KEY: test_secret_key
       run: |
         python -m pytest --ignore=tests/test_integration.py
-
