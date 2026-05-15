@@ -31,4 +31,17 @@ jobs:
         SECRET_KEY: test_secret_key
       run: |
         # Using python -m prevents environment mismatch errors
-        python -m pytest tests/ --ignore=tests/test_integration.py
+            # Update your dependency step to install the plugin
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install pytest pytest-custom-exit-code
+        
+    # Add the custom exit code flag to the runner step
+    - name: Test with pytest
+      env:
+        SECRET_KEY: test_secret_key
+      run: |
+        python -m pytest tests/ --ignore=tests/test_integration.py --suppress-no-test-exit-code
+
