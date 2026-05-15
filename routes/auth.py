@@ -10,19 +10,44 @@ auth_bp = Blueprint("auth", __name__)
 
 # ---------------- LOGIN ----------------
 @auth_bp.route("/login", methods=["POST"])
-def login():
+def login():    
     data = request.json
-    email, password = data.get("email"), data.get("password")
+    login_id = data.get("email") # Could be username or email
+    password = data.get("password")
     
+    if not login_id or not password:
+        return jsonify({"error": "Missing credentials"}), 400
+
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute(f"SELECT admin.password as password, admin.email as email, admin.id as user_id, gym.id as gym_id, gym.name as gym_name FROM admin inner join gym on admin.id = gym.admin_id WHERE email = '{email}' ")
+    print("it's a username, super admin (might not have a gym)"+login_id)
+    if "@" in login_id:
+        # It's an email, regular admin
+        query = """
+            SELECT admin.password as password, admin.email as email, admin.id as user_id, admin.username as username, 
+                   gym.id as gym_id, gym.name as gym_name 
+            FROM admin 
+            INNER JOIN gym ON admin.id = gym.admin_id 
+            WHERE admin.email = %s
+        """
+    else:
+        
+        # It's a username, super admin (might not have a gym)
+        query = """
+            SELECT admin.password as password, admin.email as email, admin.id as user_id, admin.username as username,
+                   gym.id as gym_id, gym.name as gym_name 
+            FROM admin 
+            LEFT JOIN gym ON admin.id = gym.admin_id 
+            WHERE admin.username = %s
+        """
+        
+    cursor.execute(query, (login_id,))
     user = cursor.fetchone()
-    
     
     if not user or not bcrypt.checkpw(password.encode(), user["password"].encode()):
         return jsonify({"error": "Invalid credentials"}), 401
 
+    is_super_admin = bool(user.get("username"))
 
     token = generate_access_token(user)
     return jsonify({
@@ -31,7 +56,8 @@ def login():
         "access_token": token,
         "gym_id": user["gym_id"],
         "gym_name": user["gym_name"],
-        "token":token
+        "token": token,
+        "is_super_admin": is_super_admin
     })
     
 
