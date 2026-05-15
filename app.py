@@ -1,7 +1,8 @@
-from flask import Flask, render_template
+from flask import Flask
 from flask_cors import CORS
-from routes import all_blueprints
-
+from routes.api import api_bp
+from flask import Flask, render_template
+from db import get_db
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -12,9 +13,9 @@ app = Flask(__name__)
 
 
 
-# Register all API Blueprints with prefix /api
-for bp in all_blueprints:
-    app.register_blueprint(bp, url_prefix="/api")
+# Register API Blueprint with prefix /api
+
+app.register_blueprint(api_bp, url_prefix="/api")
 
 
 CORS(
