@@ -61,6 +61,32 @@ def get_today_entries(gym_id):
         conn.close()
 
 
+@entries_bp.route("/entries/day/<int:gym_id>/<string:date_str>", methods=["GET"])
+@authenticate_token
+def get_entries_by_day(gym_id, date_str):
+    query = """
+        SELECT entries.*, users.name, users.id AS user_id
+        FROM entries
+        JOIN users ON entries.users_id = users.id
+        WHERE DATE(day) = %s AND entries.gym_id = %s
+        ORDER BY day DESC
+    """
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(query, (date_str, gym_id))
+        results = cursor.fetchall()
+        return jsonify(results), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 
 @entries_bp.route("/entries", methods=["POST"])
 @authenticate_token
