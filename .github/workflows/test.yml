@@ -1,7 +1,10 @@
 name: Run Tests
+
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main", "stg" ]
 
 jobs:
   build:
