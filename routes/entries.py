@@ -124,3 +124,27 @@ def get_entries_by_user(user_id):
     finally:
         cursor.close()
         conn.close()
+
+@entries_bp.route("/entries/gym/<int:gym_id>/recent", methods=["GET"])
+@authenticate_token
+def get_recent_entries_by_gym(gym_id):
+    limit = int(request.args.get("limit", 20))
+    query = """
+        SELECT entries.id, entries.day, users.name, users.id as user_id
+        FROM entries
+        JOIN users ON entries.users_id = users.id
+        WHERE entries.gym_id = %s
+        ORDER BY entries.day DESC
+        LIMIT %s
+    """
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(query, (gym_id, limit))
+        results = cursor.fetchall()
+        return jsonify(results), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()

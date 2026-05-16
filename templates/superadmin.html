@@ -1,230 +1,213 @@
 {% extends "base.html" %}
-
 {% block title %}Super Admin Panel{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-  <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h3 class="mb-0">Panel Super Admin - Gestión de Gimnasios</h3>
-      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addGymModal">
-        <i class="bi bi-plus-circle"></i> Nuevo Gimnasio
-      </button>
-    </div>
+<style>
+  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
 
-    <div class="card shadow">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead class="table-dark">
-              <tr>
-                <th>ID</th>
-                <th>Nombre del Gimnasio</th>
-                <th>Email del Admin</th>
-                <th class="text-end">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="gymsTableBody">
-              <tr><td colspan="4" class="text-center py-4">Cargando gimnasios...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+  .page-header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .admin-card {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  .btn-premium {
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 0.6rem 1.25rem;
+    transition: all 0.3s ease;
+  }
+
+  .table thead th {
+    background: #f1f5f9;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    padding: 1rem 1.5rem;
+    border: none;
+  }
+
+  .table tbody td {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+</style>
+
+<div class="page-header mt-4">
+  <div>
+    <h2 class="fw-bold text-dark m-0">Super Admin</h2>
+    <p class="text-muted small m-0">Gestión global de gimnasios y administradores</p>
+  </div>
+  <button class="btn btn-premium btn-primary" data-bs-toggle="modal" data-bs-target="#addGymModal">
+    <i class="bi bi-plus-circle me-2"></i>Nuevo Gimnasio
+  </button>
+</div>
+
+<div class="admin-card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Gimnasio</th>
+          <th>Email Administrador</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="gymsTableBody">
+        <tr><td colspan="4" class="text-center py-5 text-muted">Cargando gimnasios...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
 <!-- Modal Añadir Gimnasio -->
 <div class="modal fade" id="addGymModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Registrar Nuevo Gimnasio y Admin</h5>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="fw-bold m-0">Registrar Nuevo Gimnasio</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <form id="addGymForm">
           <div class="mb-3">
-            <label class="form-label">Nombre del Gimnasio</label>
-            <input type="text" class="form-control" id="newGymName" required>
+            <label class="form-label small fw-bold text-muted">Nombre del Gimnasio</label>
+            <input type="text" class="form-control rounded-3" id="newGymName" required placeholder="Ej: Elite Gym">
           </div>
           <div class="mb-3">
-            <label class="form-label">Email del Admin</label>
-            <input type="email" class="form-control" id="newAdminEmail" required>
+            <label class="form-label small fw-bold text-muted">Email del Administrador</label>
+            <input type="email" class="form-control rounded-3" id="newAdminEmail" required placeholder="admin@gym.com">
           </div>
           <div class="mb-3">
-            <label class="form-label">Contraseña del Admin</label>
-            <input type="password" class="form-control" id="newAdminPass" required>
+            <label class="form-label small fw-bold text-muted">Contraseña Inicial</label>
+            <input type="password" class="form-control rounded-3" id="newAdminPass" required placeholder="••••••••">
           </div>
         </form>
-        <div id="addGymError" class="text-danger small mt-2"></div>
+        <div id="addGymError" class="text-danger small mt-2 fw-bold"></div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="saveGymBtn">Guardar</button>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-premium btn-light border" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-premium btn-primary px-4" id="saveGymBtn">Crear Gimnasio</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Ensure the user is a super admin
   const token = localStorage.getItem("token");
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
 
-  if (!token || !userData.is_super_admin) {
-    alert("Acceso denegado. Se requiere cuenta de Super Admin.");
-    window.location.href = "/";
-  }
+  if (!token || !userData.is_super_admin) window.location.href = "/";
 
   async function fetchGyms() {
+    const tbody = document.getElementById("gymsTableBody");
     try {
       const res = await fetch("/api/superadmin/gyms", {
         headers: { "Authorization": `Bearer ${token}` }
       });
-      if (res.status === 403) {
-        alert("Sesión expirada o no autorizada");
-        window.location.href = "/";
-        return;
-      }
-      if (!res.ok) throw new Error("Error al cargar los gimnasios");
-
       const gyms = await res.json();
-      const tbody = document.getElementById("gymsTableBody");
       tbody.innerHTML = "";
 
-      if (gyms.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center">No hay gimnasios registrados</td></tr>`;
+      if (!gyms.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Sin gimnasios registrados</td></tr>';
         return;
       }
 
       gyms.forEach(gym => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${gym.gym_id}</td>
-          <td class="fw-bold">${gym.gym_name}</td>
+          <td class="text-muted">#${gym.gym_id}</td>
+          <td class="fw-bold text-dark">${gym.gym_name}</td>
           <td>
-            <div class="input-group input-group-sm" style="max-width: 250px;">
-              <input type="email" class="form-control" value="${gym.admin_email}" id="email_${gym.admin_id}">
-              <button class="btn btn-outline-primary" onclick="updateAdminEmail(${gym.admin_id})">
+            <div class="input-group input-group-sm" style="max-width: 300px;">
+              <input type="email" class="form-control rounded-start-3" value="${gym.admin_email}" id="email_${gym.admin_id}">
+              <button class="btn btn-primary rounded-end-3" onclick="updateAdminEmail(${gym.admin_id})">
                 <i class="bi bi-save"></i>
               </button>
             </div>
           </td>
           <td class="text-end">
-            <button class="btn btn-sm btn-danger" onclick="deleteGym(${gym.gym_id}, '${gym.gym_name}')">
-              <i class="bi bi-trash"></i> Eliminar
+            <button class="btn btn-sm btn-outline-danger border-0 fw-bold" onclick="deleteGym(${gym.gym_id}, '${gym.gym_name}')">
+              <i class="bi bi-trash3-fill"></i>
             </button>
           </td>
         `;
         tbody.appendChild(tr);
       });
-
     } catch (err) {
-      console.error(err);
-      document.getElementById("gymsTableBody").innerHTML = `<tr><td colspan="4" class="text-danger text-center">Error de red</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="4" class="text-danger text-center py-5">Error de conexión</td></tr>';
     }
   }
 
   async function updateAdminEmail(adminId) {
     const newEmail = document.getElementById(`email_${adminId}`).value;
-    if (!newEmail) return alert("Email no puede estar vacío");
-    
-    if(!confirm("¿Actualizar email del administrador?")) return;
+    if (!newEmail || !confirm("¿Actualizar email del administrador?")) return;
 
     try {
       const res = await fetch(`/api/superadmin/admins/${adminId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ email: newEmail })
       });
-      
-      if (res.ok) {
-        alert("Email actualizado exitosamente.");
-        fetchGyms();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Error al actualizar");
-      }
-    } catch (err) {
-      alert("Error de red");
-    }
+      if (res.ok) fetchGyms();
+    } catch (err) { alert("Error"); }
   }
 
   async function deleteGym(gymId, gymName) {
-    if (!confirm(`¿Estás seguro de que deseas ELIMINAR el gimnasio "${gymName}"? Esta acción es irreversible y borrará todos sus datos.`)) return;
-
+    if (!confirm(`¿Eliminar definitivamente "${gymName}"?`)) return;
     try {
       const res = await fetch(`/api/superadmin/gyms/${gymId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
-      
-      if (res.ok) {
-        fetchGyms();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Error al eliminar");
-      }
-    } catch (err) {
-      alert("Error de red");
-    }
+      if (res.ok) fetchGyms();
+    } catch (err) { alert("Error"); }
   }
 
   document.getElementById("saveGymBtn").addEventListener("click", async () => {
     const name = document.getElementById("newGymName").value;
     const email = document.getElementById("newAdminEmail").value;
     const pass = document.getElementById("newAdminPass").value;
-    const errorDiv = document.getElementById("addGymError");
-    
-    errorDiv.textContent = "";
-
-    if (!name || !email || !pass) {
-      errorDiv.textContent = "Todos los campos son obligatorios";
-      return;
-    }
-
     const btn = document.getElementById("saveGymBtn");
+
+    if (!name || !email || !pass) return;
+
     btn.disabled = true;
-    btn.textContent = "Guardando...";
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
 
     try {
       const res = await fetch("/api/superadmin/gyms", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ gym_name: name, admin_email: email, admin_password: pass })
       });
 
       if (res.ok) {
-        // close modal
-        const modalEl = document.getElementById("addGymModal");
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
-        
-        // reset form
+        bootstrap.Modal.getInstance(document.getElementById("addGymModal")).hide();
         document.getElementById("addGymForm").reset();
-        
-        // reload
         fetchGyms();
       } else {
         const data = await res.json();
-        errorDiv.textContent = data.error || "Error al registrar el gimnasio";
+        document.getElementById("addGymError").textContent = data.error || "Error";
       }
-    } catch (err) {
-      errorDiv.textContent = "Error de conexión";
-    } finally {
+    } catch (err) { console.error(err); }
+    finally {
       btn.disabled = false;
-      btn.textContent = "Guardar";
+      btn.innerHTML = "Crear Gimnasio";
     }
   });
 
-  // Init
   document.addEventListener("DOMContentLoaded", fetchGyms);
 </script>
 {% endblock %}

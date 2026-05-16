@@ -4,7 +4,7 @@
 {% block content %}
 <style>
   body {
-    background-color: #f8f9fa;
+    background-color: #f8fafc;
     margin: 0;
     padding: 0;
     font-family: "Inter", sans-serif;
@@ -16,125 +16,251 @@
     height: 260px;
     background-size: cover;
     background-position: center;
-    border-radius: 0 0 20px 20px;
+    border-radius: 0 0 30px 30px;
     overflow: hidden;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
   }
 
   .dashboard-hero::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.7));
   }
 
   .dashboard-hero-content {
     position: absolute;
-    bottom: 30px;
+    bottom: 40px;
     left: 40px;
     color: white;
     z-index: 2;
   }
 
   .gym-name {
-    font-size: 2rem;
+    font-size: 2.25rem;
     font-weight: 800;
+    letter-spacing: -0.02em;
   }
 
   .gym-subtitle {
     font-size: 1.1rem;
-    color: #e9ecef;
+    color: rgba(255, 255, 255, 0.9);
   }
 
   .dashboard-container {
-    max-width: 800px;
-    margin: -40px auto 0;
-    padding: 0 1rem 4rem;
+    max-width: 1000px;
+    margin: -50px auto 0;
+    padding: 0 1rem 5rem;
   }
 
   .dashboard-card {
-    border-radius: 14px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s;
-    margin-bottom: 1.5rem;
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: #fff;
-    cursor: pointer;
+    overflow: hidden;
   }
 
   .dashboard-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 
-  .dashboard-card h5, .dashboard-card h4 {
-    color: #6c757d;
+  /* Capacity Gauge Styles */
+  .gauge-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto;
+  }
+
+  .gauge-svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+  }
+
+  .gauge-bg {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 12;
+  }
+
+  .gauge-progress {
+    fill: none;
+    stroke: #6366f1;
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-dasharray: 440;
+    stroke-dashoffset: 440;
+    transition: stroke-dashoffset 1.5s ease-out, stroke 0.5s ease;
+  }
+
+  .gauge-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .gauge-percent {
+    font-size: 2rem;
+    font-weight: 800;
+    display: block;
+    line-height: 1;
+    color: #1e293b;
+  }
+
+  .gauge-label {
+    font-size: 0.75rem;
+    color: #64748b;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  .metric-icon {
-    font-size: 2.5rem;
-    opacity: 0.8;
+  .metric-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 0;
   }
 
-  .small-text {
-    font-size: 0.9rem;
-    color: #6c757d;
+  .metric-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
   }
 
   .gym-thumb {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    border-radius: 18px;
     object-fit: cover;
-    border: 2px solid #fff;
+    border: 3px solid rgba(255, 255, 255, 0.3);
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 30px;
+    left: 40px;
     z-index: 3;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 </style>
 
 <div id="heroSection" class="dashboard-hero">
-  <img id="gymThumb" class="gym-thumb" src="https://via.placeholder.com/60?text=Gym" alt="Gym image">
+  <img id="gymThumb" class="gym-thumb" src="https://via.placeholder.com/70?text=Gym" alt="Gym image">
   <div class="dashboard-hero-content">
     <h2 id="gymName" class="gym-name">Cargando...</h2>
     <p id="gymSubtitle" class="gym-subtitle">Bienvenido a tu panel de administración</p>
   </div>
 </div>
 
-
-
-  <div class="card dashboard-card text-center p-4" onclick="window.location='/manage-users'">
-    <div class="metric-icon text-primary mb-2">
-      <i class="bi bi-people-fill"></i>
+<div class="dashboard-container">
+  <!-- Top Metrics Row -->
+  <div class="row g-4 mb-4">
+    <!-- Capacity Gauge -->
+    <div class="col-lg-4">
+      <div class="card dashboard-card p-4 text-center h-100">
+        <h5 class="metric-label">Capacidad Actual</h5>
+        <div class="gauge-container my-3">
+          <svg class="gauge-svg" viewBox="0 0 160 160">
+            <circle class="gauge-bg" cx="80" cy="80" r="70"></circle>
+            <circle id="capacityGauge" class="gauge-progress" cx="80" cy="80" r="70"></circle>
+          </svg>
+          <div class="gauge-text">
+            <span id="capacityPercent" class="gauge-percent">0%</span>
+            <span class="gauge-label">Lleno</span>
+          </div>
+        </div>
+        <p id="capacityStatus" class="small text-muted fw-medium mb-0">Cargando volumen...</p>
+      </div>
     </div>
-    <h4>Usuarios </h4>
-    <h2 id="userCount" class="text-primary fw-bold">0</h2>
-    <p class="small-text mb-0">Miembros registrados en tu gimnasio</p>
+
+    <!-- Users Count -->
+    <div class="col-lg-4" onclick="window.location='/manage-users'" style="cursor: pointer;">
+      <div class="card dashboard-card p-4 text-center h-100 d-flex flex-column justify-content-center">
+        <div class="mb-3">
+          <i class="bi bi-people-fill text-primary" style="font-size: 2.5rem;"></i>
+        </div>
+        <h5 class="metric-label">Miembros Totales</h5>
+        <h2 id="userCount" class="metric-value">0</h2>
+        <p class="small text-muted mt-2">Registrados en el sistema</p>
+      </div>
+    </div>
+
+    <!-- Today's Entries -->
+    <div class="col-lg-4" onclick="window.location='/entries'" style="cursor: pointer;">
+      <div class="card dashboard-card p-4 text-center h-100 d-flex flex-column justify-content-center">
+        <div class="mb-3">
+          <i class="bi bi-lightning-charge-fill text-warning" style="font-size: 2.5rem;"></i>
+        </div>
+        <h5 class="metric-label">Visitas Hoy</h5>
+        <h2 id="entriesCount" class="metric-value">0</h2>
+        <p class="small text-muted mt-2">Check-ins en las últimas 24h</p>
+      </div>
+    </div>
   </div>
 
-  <div class="card dashboard-card text-center p-4" onclick="window.location='/entries'">
-    <div class="metric-icon text-success mb-2">
-      <i class="bi bi-door-open-fill"></i>
-    </div>
-    <h4>Entradas de Hoy</h4>
-    <h2 id="entriesCount" class="text-success fw-bold">0</h2>
-    <p class="small-text mb-0">Visitas registradas en las últimas 24 horas</p>
+  <div id="editGymCard" class="card dashboard-card p-3 mb-5 text-center bg-light border-dashed"
+    style="cursor: pointer; border: 2px dashed #cbd5e1; background: transparent;">
+    <span class="text-secondary fw-semibold"><i class="bi bi-gear-fill me-2"></i>Configuración del Gimnasio</span>
   </div>
 
-  <div id="editGymCard" class="card dashboard-card text-center p-4">
-    <div class="metric-icon text-warning mb-2">
-      <i class="bi bi-gear-fill"></i>
+  <!-- SECCIÓN DE REPORTES -->
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="section-title">
+        <i class="bi bi-clock-history text-primary"></i> Úitimas Entradas
+      </div>
+      <div class="card dashboard-card">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <tbody id="recentEntriesTable">
+              <tr>
+                <td class="text-center py-4 text-muted">Cargando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <h4>Administrar Gimnasio</h4>
-    <p class="small-text mb-0">Editar nombre, imagen y configuración</p>
+
+    <div class="col-md-6">
+      <div class="section-title">
+        <i class="bi bi-calendar-range text-danger"></i> Próximos a Vencer
+      </div>
+      <div class="card dashboard-card">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <tbody id="expiringUsersTable">
+              <tr>
+                <td class="text-center py-4 text-muted">Cargando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
-
-
+</div>
 
 <script>
   const token = localStorage.getItem('token');
   if (!token) window.location.href = '/';
+
+  const MAX_CAPACITY = 100;
 
   async function loadDashboard() {
     try {
@@ -143,58 +269,106 @@
 
       if (!gymId) {
         document.querySelector('.dashboard-container').innerHTML =
-          '<p class="text-danger text-center mt-5">No se encontró la información del gimnasio. Por favor, inicia sesión nuevamente.</p>';
+          '<p class="text-danger text-center mt-5">No se encontró la información del gimnasio.</p>';
         return;
       }
 
-      // 🏋️ Obtener información del gimnasio
+      // 1. Gym Data
       const gymRes = await fetch(`/api/gym/${gymId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const gym = await gymRes.json();
 
-      // 🖼️ Imagen de fondo
       const heroSection = document.getElementById('heroSection');
-      if (gym.back) {
-        heroSection.style.backgroundImage = `url('data:image/jpeg;base64,${gym.back}')`;
-      } else {
-        heroSection.style.backgroundImage = `url('/static/default-bg.jpg')`;
-      }
+      heroSection.style.backgroundImage = gym.back
+        ? `url('data:image/jpeg;base64,${gym.back}')`
+        : `url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1470')`;
 
-      // 🧩 Imagen del gimnasio (logo)
       if (gym.image) {
         document.getElementById('gymThumb').src = `data:image/jpeg;base64,${gym.image}`;
-      } else {
-        document.getElementById('gymThumb').src = '/static/default-thumb.jpg';
       }
 
-      document.getElementById('gymName').textContent = gym.name || 'Gimnasio Desconocido';
-      document.getElementById('gymSubtitle').textContent = gym.description || 'Panel de administración del gimnasio';
+      document.getElementById('gymName').textContent = gym.name || 'Gimnasio';
+      document.getElementById('gymSubtitle').textContent = gym.description || 'Bienvenido de nuevo';
 
-      // 👥 Contar usuarios
-      const usersRes = await fetch(`/api/users/gym/${gym.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // 2. Metrics
+      const [usersRes, entriesRes] = await Promise.all([
+        fetch(`/api/users/gym/${gym.id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/entries/today/${gym.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
       const users = await usersRes.json();
-      document.getElementById('userCount').textContent = users.length;
+      const entriesRaw = await entriesRes.json();
+      const entries = Array.from(new Map(entriesRaw.map(e => [e.user_id, e])).values());
 
-      // 🗓️ Contar entradas de hoy
-      const entriesRes = await fetch(`/api/entries/today/${gym.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const entries = await entriesRes.json();
+      document.getElementById('userCount').textContent = users.length;
       document.getElementById('entriesCount').textContent = entries.length;
 
-      // ⚙️ Enlace de edición del gimnasio
+      // 3. Capacity Gauge Logic
+      updateCapacityGauge(entries.length);
+
+      // 4. Gym Edit
       document.getElementById('editGymCard').addEventListener('click', () => {
         window.location.href = `/edit-gym?gym_id=${gym.id}`;
       });
 
+      // 5. Recent Entries Table
+      const recentRes = await fetch(`/api/entries/gym/${gym.id}/recent?limit=8`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const recent = await recentRes.json();
+      const recentTbody = document.getElementById('recentEntriesTable');
+      recentTbody.innerHTML = recent.map(e => {
+        const timeStr = new Date(e.day).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+        return `
+          <tr>
+            <td class="ps-4 fw-medium">${e.name}</td>
+            <td class="text-end pe-4 text-muted small">${timeStr}</td>
+          </tr>
+        `;
+      }).join('') || '<tr><td class="text-center py-4">No hay entradas recientes</td></tr>';
+
+      // 6. Expiring Users Table
+      const expiring = users
+        .filter(u => u.exp)
+        .sort((a, b) => new Date(a.exp) - new Date(b.exp))
+        .slice(0, 8);
+      const expiringTbody = document.getElementById('expiringUsersTable');
+      expiringTbody.innerHTML = expiring.map(u => {
+        const diff = Math.ceil((new Date(u.exp) - new Date()) / (1000 * 60 * 60 * 24));
+        const badgeColor = diff <= 0 ? 'bg-danger' : (diff <= 7 ? 'bg-warning' : 'bg-success');
+        return `
+          <tr>
+            <td class="ps-4 fw-medium">${u.name}</td>
+            <td class="text-end pe-4">
+              <span class="badge ${badgeColor}">${new Date(u.exp).toLocaleDateString()}</span>
+            </td>
+          </tr>
+        `;
+      }).join('') || '<tr><td class="text-center py-4">No hay usuarios próximos a vencer</td></tr>';
+
     } catch (error) {
-      console.error('Error cargando el panel:', error);
-      document.querySelector('.dashboard-container').innerHTML =
-        '<p class="text-danger text-center mt-5">Error al cargar los datos. Intenta nuevamente.</p>';
+      console.error('Error:', error);
     }
+  }
+
+  function updateCapacityGauge(current) {
+    const percent = Math.min(Math.round((current / MAX_CAPACITY) * 100), 100);
+    const gauge = document.getElementById('capacityGauge');
+    const percentText = document.getElementById('capacityPercent');
+    const statusText = document.getElementById('capacityStatus');
+
+    // Circle circumference = 2 * PI * R (2 * 3.14 * 70 = 439.6)
+    const offset = 440 - (440 * percent) / 100;
+    gauge.style.strokeDashoffset = offset;
+    percentText.textContent = `${percent}%`;
+
+    // Color scaling
+    if (percent > 80) gauge.style.stroke = '#ef4444'; // Red
+    else if (percent > 50) gauge.style.stroke = '#f59e0b'; // Amber
+    else gauge.style.stroke = '#6366f1'; // Indigo
+
+    statusText.textContent = `${current} / ${MAX_CAPACITY} miembros hoy`;
   }
 
   loadDashboard();

@@ -1,51 +1,104 @@
 {% extends "base.html" %}
-
-{% block title %}Login - GymAdmin{% endblock %}
+{% block title %}Recuperar Acceso - GymAdmin{% endblock %}
 
 {% block content %}
+<style>
+  body { 
+    background-color: #0f172a; 
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+    font-family: "Inter", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+  }
 
-  
-    <h3 class="text-center mb-3">Forgot Password</h3>
-    <form id="forgotForm">
-      <div class="mb-3">
-        <label for="email" class="form-label">Email address</label>
-        <input type="email" id="email" name="email" class="form-control" required>
-      </div>
-      <button type="submit" class="btn btn-primary w-100">Send Reset Link</button>
-    </form>
-    <div id="message" class="text-center mt-3 text-danger"></div>
-    <div class="text-center mt-3">
-      <a href="/" class="text-decoration-none">Back to login</a>
+  .auth-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 3rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+    color: white;
+  }
+
+  .form-control-premium {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 12px;
+    padding: 0.8rem 1.25rem;
+  }
+
+  .btn-premium {
+    border-radius: 12px;
+    font-weight: 700;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    border: none;
+    transition: all 0.3s ease;
+  }
+</style>
+
+<div class="auth-card">
+  <div class="text-center mb-4">
+    <h3 class="fw-bold m-0">Olvidé mi clave</h3>
+    <p class="text-muted small mt-2">Enviaremos un código a tu correo</p>
+  </div>
+
+  <form id="forgotForm">
+    <div class="mb-4">
+      <label class="form-label small fw-bold text-muted text-uppercase">Correo Electrónico</label>
+      <input type="email" id="email" class="form-control form-control-premium" required placeholder="tu@email.com">
     </div>
-  
+    <button type="submit" id="submitBtn" class="btn btn-premium w-100 text-white mb-3">Enviar Código</button>
+  </form>
 
-  <script>
-    const form = document.getElementById('forgotForm');
-    const msg = document.getElementById('message');
+  <div id="message" class="text-center small"></div>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      msg.textContent = '';
-      const email = form.email.value;
+  <div class="text-center mt-3 pt-3 border-top border-secondary border-opacity-25">
+    <a href="/" class="text-muted small text-decoration-none fw-semibold"><i class="bi bi-arrow-left me-1"></i>Volver al Login</a>
+  </div>
+</div>
 
+<script>
+  const form = document.getElementById('forgotForm');
+  const msg = document.getElementById('message');
+  const btn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+    
+    try {
+      const email = document.getElementById('email').value;
       const res = await fetch('/api/send-password-code', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({"email": email })
       });
 
-      const result = await res.json();
-
       if (res.ok) {
-        msg.classList.remove('text-danger');
-        msg.classList.add('text-success');
-        msg.textContent = '✅ If your email exists, a reset link has been sent.';
-        window.location.href = "/reset?email="+email
+        msg.className = "text-success fw-bold";
+        msg.textContent = '✅ Código enviado. Redirigiendo...';
+        setTimeout(() => window.location.href = "/reset?email=" + email, 1000);
       } else {
-        msg.classList.remove('text-success');
-        msg.classList.add('text-danger');
-        msg.textContent = result.error || '❌ Failed to send reset link.';
+        const result = await res.json();
+        msg.className = "text-danger fw-bold";
+        msg.textContent = result.error || '❌ Error al enviar.';
+        btn.disabled = false;
+        btn.textContent = "Enviar Código";
       }
-    });
-  </script>
+    } catch (err) {
+      msg.textContent = '⚠️ Error de conexión.';
+      btn.disabled = false;
+    }
+  });
+</script>
 {% endblock %}
