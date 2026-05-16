@@ -615,7 +615,7 @@ def send_password_code():
         conn = get_db()
         cursor = conn.cursor()
         query = """
-            UPDATE `gyms`.`admin`
+            UPDATE s`admin`
             SET `verify_code` = %s, `verify_code_exp` = DATE_ADD(NOW(), INTERVAL 2 HOUR)
             WHERE email = %s;
         """
