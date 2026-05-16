@@ -3,55 +3,104 @@
 
 {% block content %}
 <style>
-  body { background-color: #f8f9fa; }
+  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
 
-  .form-label {
-    font-weight: 600;
+  .page-header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .form-card {
+    background: white;
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .img-preview-container {
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 1rem;
+    text-align: center;
+    border: 2px dashed #cbd5e1;
+    transition: all 0.3s ease;
   }
 
   .img-preview {
     width: 100%;
-    max-width: 220px;
-    height: 220px;
+    max-width: 200px;
+    height: 200px;
     object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-premium {
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-control {
     border-radius: 10px;
-    border: 2px solid #dee2e6;
-    margin-bottom: 10px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .form-control:focus {
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    border-color: #6366f1;
   }
 </style>
 
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3>➕ Agregar Nuevo Usuario</h3>
-    <a href="/manage-users" class="btn btn-outline-secondary">⬅ Volver</a>
+<div class="page-header">
+  <div>
+    <h2 class="fw-bold text-dark m-0">Nuevo Miembro</h2>
+    <p class="text-muted small m-0">Completa la información para registrar un nuevo usuario</p>
   </div>
+  <a href="/manage-users" class="btn btn-premium btn-light border"><i class="bi bi-arrow-left me-2"></i>Volver</a>
+</div>
 
-  <div class="card shadow-sm p-4">
-    <form id="addUserForm" enctype="multipart/form-data">
-      <div class="row">
-        <div class="col-md-4 text-center mb-3">
-          <img id="previewImg" class="img-preview d-block mx-auto" src="https://via.placeholder.com/200?text=Vista+Previa" alt="Vista previa">
-          <input class="form-control mt-2" type="file" id="userImage" accept="image/*">
-        </div>
-
-        <div class="col-md-8">
-          <div class="mb-3">
-            <label for="userName" class="form-label">Nombre Completo</label>
-            <input type="text" class="form-control" id="userName" placeholder="Ingrese el nombre completo del usuario" required>
-          </div>
-
-          <div class="mb-3">
-            <label for="userExp" class="form-label">Fecha de Expiración</label>
-            <input type="date" class="form-control" id="userExp" required>
-          </div>
-
-          <button type="submit" class="btn btn-primary w-100">💾 Guardar Usuario</button>
+<div class="form-card">
+  <form id="addUserForm">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="img-preview-container">
+          <img id="previewImg" class="img-preview mb-3" src="https://ui-avatars.com/api/?name=New+User&background=6366f1&color=fff&size=200" alt="Vista previa">
+          <label for="userImage" class="btn btn-sm btn-outline-primary fw-bold">Subir Foto</label>
+          <input type="file" id="userImage" class="d-none" accept="image/*">
         </div>
       </div>
-    </form>
 
-    <div id="message" class="text-center mt-3 text-info"></div>
-  </div>
+      <div class="col-md-8">
+        <div class="mb-4">
+          <label for="userName" class="form-label">Nombre Completo</label>
+          <input type="text" class="form-control" id="userName" placeholder="Ej: Juan Pérez" required>
+        </div>
+
+        <div class="mb-4">
+          <label for="userExp" class="form-label">Fecha de Expiración</label>
+          <input type="date" class="form-control" id="userExp" required>
+        </div>
+
+        <button type="submit" class="btn btn-premium btn-primary w-100">
+          <i class="bi bi-check2-circle me-2"></i>Registrar Miembro
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div id="message" class="text-center mt-4"></div>
 </div>
 
 <script>
@@ -59,51 +108,35 @@
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const gymId = userData.gym_id;
 
-  if (!token || !gymId) {
-    alert("Falta información de inicio de sesión. Por favor, inicia sesión nuevamente.");
-    window.location.href = "/";
-  }
+  if (!token || !gymId) window.location.href = "/";
 
-  const form = document.getElementById("addUserForm");
-  const msg = document.getElementById("message");
+  const userExp = document.getElementById("userExp");
   const userImage = document.getElementById("userImage");
   const previewImg = document.getElementById("previewImg");
-  const userExp = document.getElementById("userExp");
 
-  // 📅 Establecer fecha por defecto (1 mes desde hoy)
-  document.addEventListener("DOMContentLoaded", () => {
-    const today = new Date();
-    today.setMonth(today.getMonth() + 1);
-    userExp.value = today.toISOString().split("T")[0];
-  });
+  // Default expiration: 1 month from today
+  const today = new Date();
+  today.setMonth(today.getMonth() + 1);
+  userExp.value = today.toISOString().split("T")[0];
 
-  // 🖼️ Vista previa de imagen
   userImage.addEventListener("change", () => {
     const file = userImage.files[0];
     if (file) {
       previewImg.src = URL.createObjectURL(file);
-    } else {
-      previewImg.src = "https://via.placeholder.com/200?text=Vista+Previa";
     }
   });
 
-  // 🧩 Envío del formulario
-  form.addEventListener("submit", async (e) => {
+  document.getElementById("addUserForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    msg.textContent = "⏳ Guardando usuario...";
+    const msg = document.getElementById("message");
+    msg.innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div> Guardando...';
 
     const name = document.getElementById("userName").value.trim();
-    const exp = document.getElementById("userExp").value;
-    const imageFile = document.getElementById("userImage").files[0];
-
-    if (!name || !exp) {
-      msg.textContent = "⚠️ Por favor, completa todos los campos requeridos.";
-      return;
-    }
+    const exp = userExp.value;
+    const imageFile = userImage.files[0];
 
     try {
       let base64Image = null;
-
       if (imageFile) {
         base64Image = await new Promise((resolve) => {
           const reader = new FileReader();
@@ -112,33 +145,21 @@
         });
       }
 
-      const payload = {
-        name,
-        exp,
-        gym_id: gymId,
-        image: base64Image,
-      };
-
       const res = await fetch("/api/users", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, exp, gym_id: gymId, image: base64Image })
       });
 
-      const data = await res.json();
-
       if (res.ok) {
-        msg.textContent = "✅ Usuario agregado correctamente.";
-        setTimeout(() => (window.location.href = "/manage-users"), 1000);
+        msg.innerHTML = '<span class="text-success fw-bold">✅ Miembro registrado exitosamente. Redirigiendo...</span>';
+        setTimeout(() => window.location.href = "/manage-users", 1000);
       } else {
-        msg.textContent = data.error || "❌ Error al agregar usuario.";
+        const data = await res.json();
+        msg.innerHTML = `<span class="text-danger fw-bold">❌ Error: ${data.error || 'No se pudo guardar'}</span>`;
       }
     } catch (err) {
-      console.error(err);
-      msg.textContent = "⚠️ Error de red. Intenta nuevamente.";
+      msg.innerHTML = '<span class="text-danger fw-bold">⚠️ Error de conexión</span>';
     }
   });
 </script>

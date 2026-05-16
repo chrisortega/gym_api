@@ -1,124 +1,162 @@
 {% extends "base.html" %}
-
 {% block title %}Editar Gimnasio{% endblock %}
 
 {% block content %}
 <style>
-  body {
-    background-color: #f8f9fa;
+  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
+
+  .page-header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .form-section {
+  .settings-card {
     background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
   }
 
-  .img-preview {
-    width: 100%;
-    max-width: 280px;
-    height: 280px;
-    object-fit: cover;
-    border-radius: 14px;
-    border: 2px solid #dee2e6;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin: 0 auto 1rem auto;
-    display: block;
+  .preview-box {
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 2px dashed #cbd5e1;
+    margin-bottom: 1.5rem;
   }
 
-  .section-title {
+  .img-preview-lg {
+    width: 100%;
+    max-width: 300px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    background: white;
+  }
+
+  .logo-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 20px;
+    object-fit: cover;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    background: white;
+    margin-bottom: 1rem;
+  }
+
+  .btn-premium {
+    border-radius: 12px;
     font-weight: 600;
-    color: #495057;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-label {
+    font-weight: 700;
+    color: #334155;
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    display: block;
   }
 </style>
 
-<div class="container py-5">
-  <h2 class="fw-bold text-center text-primary mb-5">⚙️ Editar Gimnasio</h2>
-
-  <div id="errorAlert" class="alert alert-danger d-none"></div>
-  <div id="successAlert" class="alert alert-success d-none"></div>
-
-  <form id="gymForm" enctype="multipart/form-data" class="d-none">
-    
-    <!-- 🏋️ Logo -->
-    <div class="form-section">
-      <h5 class="section-title mb-3">Logo del Gimnasio</h5>
-      <img id="preview" class="img-preview" src="/static/default-gym.png" alt="Vista previa del logo" style="display:none;">
-      <input type="file" class="form-control mt-2" id="image" name="image" accept="image/*">
-    </div>
-
-    <!-- 🌄 Fondo -->
-    <div class="form-section">
-      <h5 class="section-title mb-3">Imagen de Fondo</h5>
-      <img id="backPreview" class="img-preview" src="/static/default-background.jpg" alt="Vista previa del fondo" style="display:none;">
-      <input type="file" class="form-control mt-2" id="back" name="back" accept="image/*">
-    </div>
-
-    <!-- 🏠 Nombre -->
-    <div class="form-section">
-      <h5 class="section-title mb-3">Nombre del Gimnasio</h5>
-      <input type="text" class="form-control" id="name" name="name" placeholder="Ingresa el nombre del gimnasio" required>
-    </div>
-
-    <div class="text-center mt-4">
-      <button type="submit" class="btn btn-primary px-5 me-2">💾 Guardar Cambios</button>
-      <a href="/dashboard" class="btn btn-outline-secondary px-4">⬅ Volver</a>
-    </div>
-  </form>
+<div class="page-header">
+  <div>
+    <h2 class="fw-bold text-dark m-0">Mi Gimnasio</h2>
+    <p class="text-muted small m-0">Personaliza la apariencia y nombre de tu gimnasio</p>
+  </div>
+  <a href="/dashboard" class="btn btn-premium btn-light border"><i class="bi bi-arrow-left me-2"></i>Volver</a>
 </div>
 
-<script>
-  const params = new URLSearchParams(window.location.search);
-  var gymId = params.get("gym_id");
-  const token = localStorage.getItem("token");
+<div id="errorAlert" class="alert alert-danger d-none rounded-4 border-0 shadow-sm mb-4"></div>
+<div id="successAlert" class="alert alert-success d-none rounded-4 border-0 shadow-sm mb-4"></div>
 
-  const errorAlert = document.getElementById("errorAlert");
-  const successAlert = document.getElementById("successAlert");
+<form id="gymForm" class="d-none">
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="settings-card h-100">
+        <h5 class="fw-bold mb-4 text-primary">Identidad Visual</h5>
+        
+        <label class="form-label">Logo del Gimnasio</label>
+        <div class="preview-box">
+          <img id="logoPreview" class="logo-preview" src="/static/default-gym.png">
+          <input type="file" class="form-control" id="imageInput" accept="image/*">
+        </div>
+
+        <label class="form-label">Imagen de Portada (Hero)</label>
+        <div class="preview-box">
+          <img id="backPreview" class="img-preview-lg" src="/static/default-background.jpg">
+          <input type="file" class="form-control mt-3" id="backInput" accept="image/*">
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="settings-card h-100">
+        <h5 class="fw-bold mb-4 text-primary">Configuración General</h5>
+        
+        <div class="mb-4">
+          <label class="form-label">Nombre del Gimnasio</label>
+          <input type="text" class="form-control rounded-3 py-2 px-3" id="gymName" required placeholder="Nombre de tu negocio">
+        </div>
+
+        <div class="alert bg-light border-0 rounded-4 p-4 mt-5">
+          <div class="d-flex gap-3">
+            <i class="bi bi-info-circle-fill text-primary" style="font-size: 1.5rem;"></i>
+            <div>
+              <h6 class="fw-bold text-dark">Información de Perfil</h6>
+              <p class="small text-muted mb-0">Esta información será visible para tus administradores y en el dashboard de entradas público.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-auto pt-4">
+          <button type="submit" class="btn btn-premium btn-primary w-100">
+            <i class="bi bi-cloud-arrow-up me-2"></i>Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  const token = localStorage.getItem("token");
+  const params = new URLSearchParams(window.location.search);
+  let gymId = params.get("gym_id");
+
   const form = document.getElementById("gymForm");
+  const successAlert = document.getElementById("successAlert");
+  const errorAlert = document.getElementById("errorAlert");
 
   if (!gymId) {
-
-    // Fallback → localStorage.user.gym_id
-    const stored = JSON.parse(localStorage.getItem("user") || "{}");    
-    if (stored.gym_id) {
-      gymId = stored.gym_id;
-    }
-    form.classList.remove("d-none");
-    loadGymData(gymId);
-  } else {
-    form.classList.remove("d-none");
-    loadGymData(gymId);    
+    const stored = JSON.parse(localStorage.getItem("user") || "{}");
+    gymId = stored.gym_id;
   }
 
+  if (!token || !gymId) window.location.href = "/";
+  else {
+    form.classList.remove("d-none");
+    loadGymData();
+  }
 
-
-  async function loadGymData(id) {
+  async function loadGymData() {
     try {
-      const res = await fetch(`/api/gym/${id}`, {
-        headers: { "Authorization": `Bearer ${token}` }
+      const res = await fetch(`/api/gym/${gymId}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-
-      if (data.error || !data.name) {
-        errorAlert.textContent = data.error || "No se encontró el gimnasio.";
-        errorAlert.classList.remove("d-none");
-        return;
-      }
-
-      document.getElementById("name").value = data.name;
-
-      const logo = document.getElementById("preview");
-      logo.src = data.image ? `data:image/jpeg;base64,${data.image}` : "/static/default-gym.png";
-      logo.style.display = "block";
-
-      const backImg = document.getElementById("backPreview");
-      backImg.src = data.back ? `data:image/jpeg;base64,${data.back}` : "/static/default-background.jpg";
-      backImg.style.display = "block";
-
+      
+      document.getElementById("gymName").value = data.name || "";
+      if (data.image) document.getElementById("logoPreview").src = `data:image/jpeg;base64,${data.image}`;
+      if (data.back) document.getElementById("backPreview").src = `data:image/jpeg;base64,${data.back}`;
     } catch (err) {
-      errorAlert.textContent = "⚠️ Error al cargar los datos del gimnasio.";
+      errorAlert.textContent = "Error al cargar datos.";
       errorAlert.classList.remove("d-none");
     }
   }
@@ -126,45 +164,41 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    formData.append("name", document.getElementById("name").value);
+    formData.append("name", document.getElementById("gymName").value);
 
-    const imageFile = document.getElementById("image").files[0];
-    if (imageFile) formData.append("image", imageFile);
+    const logo = document.getElementById("imageInput").files[0];
+    const back = document.getElementById("backInput").files[0];
+    if (logo) formData.append("image", logo);
+    if (back) formData.append("back", back);
 
-    const backFile = document.getElementById("back").files[0];
-    if (backFile) formData.append("back", backFile);
+    try {
+      const res = await fetch(`/api/gym/${gymId}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
 
-    const res = await fetch(`/api/gym/${gymId}`, {
-      method: "PUT",
-      headers: { "Authorization": `Bearer ${token}` },
-      body: formData
-    });
-
-    const data = await res.json();
-    if (data.error) {
-      errorAlert.textContent = data.error;
-      errorAlert.classList.remove("d-none");
-      successAlert.classList.add("d-none");
-    } else {
-      successAlert.textContent = data.message || "✅ Cambios guardados correctamente.";
-      successAlert.classList.remove("d-none");
-      errorAlert.classList.add("d-none");
-    }
+      if (res.ok) {
+        successAlert.textContent = "✅ Cambios guardados correctamente.";
+        successAlert.classList.remove("d-none");
+        errorAlert.classList.add("d-none");
+        setTimeout(() => successAlert.classList.add("d-none"), 3000);
+      } else {
+        errorAlert.textContent = "Error al guardar cambios.";
+        errorAlert.classList.remove("d-none");
+      }
+    } catch (err) { console.error(err); }
   });
 
-  // 🖼️ Previews
-  document.getElementById("image").addEventListener("change", (e) => previewImage(e, "preview"));
-  document.getElementById("back").addEventListener("change", (e) => previewImage(e, "backPreview"));
+  // Previews
+  document.getElementById("imageInput").addEventListener("change", (e) => preview(e, "logoPreview"));
+  document.getElementById("backInput").addEventListener("change", (e) => preview(e, "backPreview"));
 
-  function previewImage(e, targetId) {
+  function preview(e, targetId) {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => {
-        const preview = document.getElementById(targetId);
-        preview.src = reader.result;
-        preview.style.display = "block";
-      };
+      reader.onload = () => document.getElementById(targetId).src = reader.result;
       reader.readAsDataURL(file);
     }
   }

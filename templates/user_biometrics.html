@@ -1,233 +1,220 @@
 {% extends "base.html" %}
-
 {% block title %}Biométricos{% endblock %}
 
 {% block content %}
 <style>
+  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
+
+  .page-header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    height: 100%;
+  }
+
+  .btn-premium {
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-label {
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
   .bio-input {
-    font-size: 1.2rem;
-    padding: 10px;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .table thead th {
+    background: #f1f5f9;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    padding: 0.75rem 1rem;
+    border: none;
+  }
+
+  .chart-container {
+    background: white;
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
   }
 </style>
 
-<div class="container py-4">
+<div class="page-header">
+  <div>
+    <h2 class="fw-bold text-dark m-0">Biométricos</h2>
+    <p class="text-muted small m-0">Seguimiento de progreso físico</p>
+  </div>
+  <a href="javascript:history.back()" class="btn btn-premium btn-light border"><i class="bi bi-arrow-left me-2"></i>Volver</a>
+</div>
 
-  <a href="javascript:history.back()" class="btn btn-outline-secondary mb-3">
-    ⬅ Regresar
-  </a>
+<!-- Add New Biometrics -->
+<div class="stat-card mb-4">
+  <h6 class="fw-bold mb-4 text-primary"><i class="bi bi-plus-circle me-2"></i>Nuevo Registro</h6>
+  <div class="row g-3">
+    <div class="col-6 col-md-3">
+      <label class="form-label">Peso (kg)</label>
+      <input id="bioPeso" type="number" step="0.1" class="form-control bio-input" placeholder="0.0">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Altura (cm)</label>
+      <input id="bioAltura" type="number" step="0.1" class="form-control bio-input" placeholder="0.0">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Cintura (cm)</label>
+      <input id="bioCintura" type="number" step="0.1" class="form-control bio-input" placeholder="0.0">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">BMG (%)</label>
+      <input id="bioBmg" type="number" step="0.1" class="form-control bio-input" placeholder="0.0">
+    </div>
+  </div>
+  <button class="btn btn-premium btn-primary w-100 mt-4" onclick="saveBiometric()">
+    <i class="bi bi-cloud-arrow-up me-2"></i>Guardar Registro
+  </button>
+</div>
 
-  <h3 class="mb-4">📊 Biométricos del Usuario</h3>
-
-  <!-- Add New Biometrics Form -->
-  <div class="card p-3 mb-4 shadow-sm">
-    <h5 class="mb-3 fw-bold">Agregar Nuevo Registro</h5>
-
-    <div class="row g-2">
-      <div class="col-md-3">
-        <input id="bioPeso" type="number" step="0.1" class="form-control bio-input" placeholder="Peso (kg)">
-      </div>
-      <div class="col-md-3">
-        <input id="bioAltura" type="number" step="0.1" class="form-control bio-input" placeholder="Altura (cm)">
-      </div>
-      <div class="col-md-3">
-        <input id="bioCintura" type="number" step="0.1" class="form-control bio-input" placeholder="Cintura (cm)">
-      </div>
-      <div class="col-md-3">
-        <input id="bioBmg" type="number" step="0.1" class="form-control bio-input" placeholder="BMG (%)">
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="stat-card">
+      <h6 class="fw-bold mb-3"><i class="bi bi-list-task me-2"></i>Historial</h6>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>P / A</th>
+              <th>C / BMG</th>
+              <th class="text-end">Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="biometricsTableBody">
+            <tr><td colspan="3" class="text-center py-4 text-muted">Cargando...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-
-    <button class="btn btn-primary mt-3 w-100" onclick="saveBiometric()">
-      Guardar Biométrico
-    </button>
   </div>
-
-  <!-- Table -->
-  <div class="card p-3 shadow-sm">
-    <h5 class="fw-bold mb-3">Historial</h5>
-
-    <table class="table table-striped table-bordered text-center">
-      <thead class="table-dark">
-        <tr>
-          <th>Peso</th>
-          <th>Altura</th>
-          <th>Cintura</th>
-          <th>BMG</th>
-          <th>Fecha</th>
-        </tr>
-      </thead>
-      <tbody id="biometricsTableBody">
-        <tr>
-          <td colspan="5" class="text-center text-muted py-3">Cargando...</td>
-        </tr>
-      </tbody>
-    </table>
-
-
-    <div class="card p-3 mt-4 shadow-sm">
-        <h5 class="fw-bold mb-3">📈 Gráfica de Progreso</h5>
-      
-        <canvas id="bioChart" height="120"></canvas>
-      </div>
-      
-      <!-- Chart.js -->
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      
+  <div class="col-lg-7">
+    <div class="stat-card">
+      <h6 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow me-2"></i>Evolución Temporal</h6>
+      <canvas id="bioChart" style="max-height: 350px;"></canvas>
+    </div>
   </div>
 </div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const token = localStorage.getItem("token");
   const userId = new URLSearchParams(window.location.search).get("user_id");
+  let bioChart = null;
 
-  if (!userId) {
-    alert("Falta user_id en la URL.");
-  }
+  if (!userId) window.location.href = "/manage-users";
 
-  document.addEventListener("DOMContentLoaded", () => {
-    loadBiometrics(userId);
-  });
+  document.addEventListener("DOMContentLoaded", () => loadBiometrics(userId));
 
   async function loadBiometrics(userId) {
     const tbody = document.getElementById("biometricsTableBody");
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>`;
+    try {
+      const res = await fetch(`/api/biometrics/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      tbody.innerHTML = "";
 
-    const res = await fetch(`/api/biometrics/${userId}`, {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Sin registros</td></tr>';
+        return;
+      }
 
-    if (!res.ok) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error al cargar</td></tr>`;
-      return;
-    }
+      data.forEach(b => {
+        tbody.innerHTML += `
+          <tr>
+            <td>
+              <div class="fw-bold">${b.peso}kg</div>
+              <div class="text-muted small">${b.altura}cm</div>
+            </td>
+            <td>
+              <div class="fw-bold">${b.cintura}cm</div>
+              <div class="text-muted small">${b.bmg}%</div>
+            </td>
+            <td class="text-end text-muted small">
+              ${new Date(b.date).toLocaleDateString()}
+            </td>
+          </tr>
+        `;
+      });
 
-    const data = await res.json();
-    tbody.innerHTML = "";
-
-    if (data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Sin registros</td></tr>`;
-      return;
-    }
-
-    data.forEach(b => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${b.peso}</td>
-          <td>${b.altura}</td>
-          <td>${b.cintura}</td>
-          <td>${b.bmg}</td>
-          <td>${new Date(b.date).toLocaleDateString()}</td>
-        </tr>
-      `;
-    });
-
-
-
-    // 📈 Render chart
-    renderBiometricsChart(data);
-
-
+      renderBiometricsChart(data);
+    } catch (err) { console.error(err); }
   }
 
   async function saveBiometric() {
-    const peso = document.getElementById("bioPeso").value;
-    const altura = document.getElementById("bioAltura").value;
-    const cintura = document.getElementById("bioCintura").value;
-    const bmg = document.getElementById("bioBmg").value;
+    const fields = ['Peso', 'Altura', 'Cintura', 'Bmg'];
+    const values = fields.reduce((acc, f) => {
+      acc[f.toLowerCase()] = document.getElementById(`bio${f}`).value;
+      return acc;
+    }, {});
 
-    if (!peso || !altura || !cintura || !bmg) {
-      alert("Todos los campos son obligatorios.");
-      return;
-    }
+    if (Object.values(values).some(v => !v)) return alert("Completa todos los campos.");
 
-    const res = await fetch("/api/biometrics", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        peso,
-        altura,
-        cintura,
-        bmg
-      })
-    });
+    try {
+      const res = await fetch("/api/biometrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_id: userId, ...values })
+      });
 
-    if (!res.ok) {
-      alert("Error al guardar biométrico");
-      return;
-    }
-
-    // Clear fields
-    document.getElementById("bioPeso").value = "";
-    document.getElementById("bioAltura").value = "";
-    document.getElementById("bioCintura").value = "";
-    document.getElementById("bioBmg").value = "";
-
-    loadBiometrics(userId);
+      if (res.ok) {
+        fields.forEach(f => document.getElementById(`bio${f}`).value = "");
+        loadBiometrics(userId);
+      }
+    } catch (err) { console.error(err); }
   }
 
+  function renderBiometricsChart(data) {
+    const ctx = document.getElementById("bioChart").getContext("2d");
+    const labels = data.map(b => new Date(b.date).toLocaleDateString());
+    
+    if (bioChart) bioChart.destroy();
 
-  let bioChart = null;
-
-function renderBiometricsChart(data) {
-  const ctx = document.getElementById("bioChart").getContext("2d");
-
-  const labels = data.map(b =>
-    new Date(b.date).toLocaleDateString("es-MX")
-  );
-
-  const peso = data.map(b => b.peso);
-  const cintura = data.map(b => b.cintura);
-  const bmg = data.map(b => b.bmg);
-
-  if (bioChart) bioChart.destroy(); // reset if redrawing
-
-  bioChart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Peso (kg)",
-          data: peso,
-          borderWidth: 3,
-          tension: 0.3
-        },
-        {
-          label: "Cintura (cm)",
-          data: cintura,
-          borderWidth: 3,
-          tension: 0.3
-        },
-        {
-          label: "BMG (%)",
-          data: bmg,
-          borderWidth: 3,
-          tension: 0.3
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "top",
-        }
+    bioChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels.reverse(),
+        datasets: [
+          { label: "Peso (kg)", data: data.map(b => b.peso).reverse(), borderColor: "#6366f1", tension: 0.4 },
+          { label: "Cintura (cm)", data: data.map(b => b.cintura).reverse(), borderColor: "#f59e0b", tension: 0.4 },
+          { label: "BMG (%)", data: data.map(b => b.bmg).reverse(), borderColor: "#10b981", tension: 0.4 }
+        ]
       },
-      scales: {
-        y: {
-          beginAtZero: false
-        }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { grid: { display: false } }, x: { grid: { display: false } } }
       }
-    }
-  });
-}
-
-
+    });
+  }
 </script>
-
 {% endblock %}

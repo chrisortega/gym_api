@@ -1,109 +1,134 @@
 {% extends "base.html" %}
-
 {% block title %}Registrar Entrada - GymAdmin{% endblock %}
 
 {% block content %}
-<body class="bg-light p-4">
-  <div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="card p-4 shadow-sm w-100" style="max-width: 450px;">
-      <div class="text-center mb-4">
-        <h3 class="fw-bold">🏋️ Registrar Entrada</h3>
-        <p class="text-muted small mb-0">
-          Ingresa el <strong>ID del usuario</strong> para registrar su entrada al gimnasio.
-        </p>
-      </div>
+<style>
+  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
 
-      <div class="mb-3">
-        <label for="userId" class="form-label">ID del Usuario</label>
-        <input 
-          type="number" 
-          id="userId" 
-          class="form-control" 
-          placeholder="Ejemplo: 102"
-          min="1"
-          autofocus
-        >
-      </div>
+  .entry-card {
+    background: white;
+    border-radius: 24px;
+    padding: 3rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    max-width: 480px;
+    margin: 4rem auto;
+    text-align: center;
+  }
 
-      <button class="btn btn-primary w-100" id="submitBtn">
-        Registrar Entrada
-      </button>
+  .entry-icon {
+    width: 80px;
+    height: 80px;
+    background: #f1f5f9;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: #6366f1;
+    margin: 0 auto 1.5rem;
+  }
 
-      <div id="alertContainer" class="mt-3"></div>
+  .btn-premium {
+    border-radius: 12px;
+    font-weight: 700;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+  }
 
-      <div class="text-center mt-4">
-        <a href="/dashboard" class="btn btn-outline-secondary btn-sm">
-          ⬅ Volver al Panel
-        </a>
-      </div>
-    </div>
+  .form-control-lg {
+    border-radius: 15px;
+    padding: 1rem 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-align: center;
+    border: 2px solid #e2e8f0;
+    background: #f8fafc;
+  }
+
+  .form-control-lg:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  }
+</style>
+
+<div class="entry-card">
+  <div class="entry-icon">
+    <i class="bi bi-person-check-fill"></i>
+  </div>
+  
+  <h3 class="fw-bold text-dark mb-2">Registrar Entrada</h3>
+  <p class="text-muted small mb-4">Ingresa el ID del miembro para validar su acceso</p>
+
+  <div class="mb-4">
+    <input type="number" id="userId" class="form-control form-control-lg" placeholder="ID" autofocus>
   </div>
 
-  <script>
-    const token = localStorage.getItem('token');
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    const gymId = userData.gym_id;
+  <button class="btn btn-premium btn-primary w-100 mb-3" id="submitBtn">
+    Confirmar Check-in
+  </button>
 
-    if (!token || !gymId) {
-      window.location.href = '/'; // Redirigir al login
+  <div id="alertContainer"></div>
+
+  <div class="mt-4 pt-3 border-top border-light">
+    <a href="/dashboard" class="text-secondary small text-decoration-none fw-bold">
+      <i class="bi bi-arrow-left me-1"></i>Volver al Panel
+    </a>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('token');
+  const userData = JSON.parse(localStorage.getItem('user') || '{}');
+  const gymId = userData.gym_id;
+
+  if (!token || !gymId) window.location.href = '/';
+
+  const submitBtn = document.getElementById("submitBtn");
+  const userIdInput = document.getElementById("userId");
+
+  userIdInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") submitBtn.click();
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    const userId = userIdInput.value.trim();
+    if (!userId) return showAlert("Ingresa un ID válido", "warning");
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Validando...';
+
+    try {
+      const response = await fetch("/api/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_id: userId, gym_id: gymId })
+      });
+
+      const result = await response.json();
+
+      if (response.status === 201) {
+        showAlert(`✅ Acceso concedido para #${userId}`, "success");
+        userIdInput.value = "";
+        userIdInput.focus();
+      } else {
+        showAlert(`❌ ${result.error || "No autorizado"}`, "danger");
+      }
+    } catch (err) {
+      showAlert("⚠️ Error de conexión", "danger");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Confirmar Check-in';
     }
+  });
 
-    const submitBtn = document.getElementById("submitBtn");
-    const userIdInput = document.getElementById("userId");
-
-    // ✅ Trigger submission on Enter key
-    userIdInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        submitBtn.click();
-      }
-    });
-
-    submitBtn.addEventListener("click", async () => {
-      const userId = userIdInput.value.trim();
-      if (!userId) {
-        showAlert("Por favor, ingresa el ID del usuario.", "warning");
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Registrando...";
-
-      try {
-        const response = await fetch("/api/entries", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ user_id: userId, gym_id: gymId })
-        });
-
-        const result = await response.json();
-
-        if (response.status === 201) {
-          showAlert(`✅ Entrada registrada para el usuario <strong>${userId}</strong> el <strong>${result.entry_date}</strong>.`, "success");
-          userIdInput.value = "";
-          userIdInput.focus();
-        } else {
-          showAlert(`❌ ${result.error || "No se pudo registrar la entrada."}`, "danger");
-        }
-      } catch (err) {
-        console.error(err);
-        showAlert("⚠️ Error del servidor. Intenta nuevamente más tarde.", "danger");
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Registrar Entrada";
-      }
-    });
-
-    function showAlert(message, type) {
-      document.getElementById("alertContainer").innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-          ${message}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      `;
-    }
-  </script>
+  function showAlert(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} mt-3 rounded-4 border-0 small fw-bold`;
+    alert.innerHTML = message;
+    const container = document.getElementById("alertContainer");
+    container.innerHTML = "";
+    container.appendChild(alert);
+    setTimeout(() => alert.remove(), 4000);
+  }
+</script>
 {% endblock %}
