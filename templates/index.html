@@ -1,96 +1,150 @@
 {% extends "base.html" %}
-
-{% block title %}GymAdmin{% endblock %}
+{% block title %}GymAdmin - Acceso{% endblock %}
 
 {% block content %}
 <style>
-  .login-container {
-    min-height: 80vh;
+  body { 
+    background-color: #0f172a; 
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+    font-family: "Inter", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+  }
+
+  .login-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 3rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+    color: white;
+  }
+
+  .login-logo {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
   }
-  .login-card {
-    width: 100%;
-    max-width: 380px;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    padding: 2rem;
-    background: #fff;
+
+  .form-control-premium {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 12px;
+    padding: 0.8rem 1.25rem;
+    transition: all 0.3s ease;
   }
-  .login-card h3 {
+
+  .form-control-premium:focus {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: #6366f1;
+    color: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+  }
+
+  .btn-premium {
+    border-radius: 12px;
     font-weight: 700;
-    margin-bottom: 1.5rem;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    border: none;
+    transition: all 0.3s ease;
   }
-  .form-control {
-    border-radius: 8px;
+
+  .btn-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
   }
-  .btn-primary {
-    border-radius: 8px;
+
+  .auth-footer-link {
+    color: #94a3b8;
+    text-decoration: none;
     font-weight: 600;
+    font-size: 0.875rem;
+    transition: color 0.2s;
   }
-  .forgot-link {
-    color: #6c757d;
-  }
-  .forgot-link:hover {
-    color: #0d6efd;
+
+  .auth-footer-link:hover {
+    color: white;
   }
 </style>
 
-<div class="container flex">
-  
-    <div class="text-center ">
-      <h3>🏋️‍♂️ GymAdmin</h3>
-      <p class="text-muted mb-0">Please log in to continue</p>
+<div class="login-card">
+  <div class="text-center mb-4">
+    <div class="login-logo">
+      <i class="bi bi-lightning-charge-fill"></i>
+    </div>
+    <h2 class="fw-bold m-0">GymAdmin</h2>
+    <p class="text-muted small mt-2">Ingresa tus credenciales para continuar</p>
+  </div>
+
+  <form id="loginForm">
+    <div class="mb-3">
+      <label class="form-label small fw-bold text-muted text-uppercase">Email o Usuario</label>
+      <input type="text" id="username" class="form-control form-control-premium" required placeholder="tu@email.com">
     </div>
 
-    <form id="loginForm" class="mt-4">
-      <div class="mb-3">
-        <label for="username" class="form-label fw-semibold">Email</label>
-        <input type="text" id="username" name="username" class="form-control" required placeholder="Enter your email">
+    <div class="mb-4">
+      <div class="d-flex justify-content-between mb-1">
+        <label class="form-label small fw-bold text-muted text-uppercase m-0">Contraseña</label>
+        <a href="/forgot" class="auth-footer-link small">¿Olvidaste?</a>
       </div>
+      <input type="password" id="password" class="form-control form-control-premium" required placeholder="••••••••">
+    </div>
 
-      <div class="mb-3">
-        <label for="password" class="form-label fw-semibold">Password</label>
-        <input type="password" id="password" name="password" class="form-control" required placeholder="Enter your password">
-      </div>
+    <button type="submit" id="submitBtn" class="btn btn-premium w-100 text-white mb-4">
+      Iniciar Sesión
+    </button>
+  </form>
 
-      <button type="submit" class="btn btn-primary w-100 py-2 mt-2">Login</button>
+  <div id="message" class="text-center small mb-4"></div>
 
-      <div class="mt-3 text-center">
-        <a href="/forgot" class="forgot-link text-decoration-none">Forgot password?</a>
-      </div>
-    </form>
-
-    <div id="message" class="text-center mt-3 text-info small"></div>
-  
+  <div class="text-center pt-3 border-top border-secondary border-opacity-25">
+    <p class="text-muted small mb-2">¿Eres un miembro?</p>
+    <a href="/myperfil" class="btn btn-outline-light btn-sm w-100 py-2 border-opacity-25 fw-bold" style="border-radius: 10px;">
+      Consultar mi perfil
+    </a>
   </div>
+</div>
 
 <script>
   // Redirect if already logged in
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
-  if (token && user) {
+  if (localStorage.getItem('token') && localStorage.getItem('user')) {
     window.location.href = '/dashboard';
   }
 
   const form = document.getElementById('loginForm');
   const msg = document.getElementById('message');
+  const btn = document.getElementById('submitBtn');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    msg.textContent = "⏳ Logging in...";
-
-    const data = {
-      email: form.username.value,
-      password: form.password.value
-    };
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Entrando...';
+    msg.textContent = "";
 
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('username').value,
+          password: document.getElementById('password').value
+        })
       });
 
       const result = await res.json();
@@ -98,14 +152,20 @@
       if (res.ok && result.token) {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result));
-        msg.textContent = "✅ Login successful! Redirecting...";
+        msg.className = "text-center small text-success fw-bold";
+        msg.textContent = "✅ Acceso concedido.";
         setTimeout(() => window.location.href = '/dashboard', 800);
       } else {
-        msg.textContent = result.error || "❌ Invalid credentials.";
+        msg.className = "text-center small text-danger fw-bold";
+        msg.textContent = "❌ Credenciales incorrectas.";
+        btn.disabled = false;
+        btn.textContent = "Iniciar Sesión";
       }
     } catch (err) {
-      console.error(err);
-      msg.textContent = "⚠️ Network error. Try again later.";
+      msg.className = "text-center small text-warning fw-bold";
+      msg.textContent = "⚠️ Error de conexión.";
+      btn.disabled = false;
+      btn.textContent = "Iniciar Sesión";
     }
   });
 </script>

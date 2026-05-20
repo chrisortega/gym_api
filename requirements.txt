@@ -8,3 +8,5 @@ gunicorn
 requests
 Pillow
 twilio
+selenium
+webdriver-manager

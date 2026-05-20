@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil - GymAdmin{% endblock %}
+
+{% block content %}
+<style>
+  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
+
+  .lookup-card {
+    background: white;
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    margin: 3rem auto;
+  }
+
+  .user-avatar-public {
+    width: 120px;
+    height: 120px;
+    border-radius: 35px;
+    object-fit: cover;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 4px solid white;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-premium {
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 0.8rem 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-control-lg {
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+
+  .entry-item {
+    background: #f8fafc;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .entry-item:hover {
+    background: white;
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  .badge-premium {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+</style>
+
+<div class="lookup-card">
+  <div id="searchView">
+    <div class="text-center mb-4">
+      <div class="mb-3">
+        <i class="bi bi-person-badge-fill text-primary" style="font-size: 3rem;"></i>
+      </div>
+      <h3 class="fw-bold text-dark">Mi Historial</h3>
+      <p class="text-muted small">Ingresa tu ID de miembro para consultar tu estado</p>
+    </div>
+
+    <div class="mb-3">
+      <input type="number" class="form-control form-control-lg text-center" id="userIdInput" placeholder="Member ID">
+    </div>
+    
+    <button id="searchBtn" class="btn btn-premium btn-primary w-100 mb-3">
+      <i class="bi bi-search me-2"></i>Consultar Historial
+    </button>
+    
+    <div class="text-center">
+      <a href="/" class="text-secondary small text-decoration-none fw-semibold">
+        <i class="bi bi-arrow-left me-1"></i>Volver al Login
+      </a>
+    </div>
+  </div>
+
+  <div id="resultArea" class="d-none">
+    <div class="text-center">
+      <img id="userPicture" src="" class="user-avatar-public">
+      <h4 id="userName" class="fw-bold text-dark mb-1"></h4>
+      <p class="text-muted small mb-2" id="userGym"></p>
+      <div class="mb-4">
+        <span id="userExp" class="badge-premium"></span>
+      </div>
+    </div>
+
+    <div class="section-title small fw-bold text-muted text-uppercase letter-spacing-05 mb-3">
+      Últimas Entradas
+    </div>
+    
+    <div id="entriesList" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+    </div>
+
+    <button class="btn btn-premium btn-light border w-100 mt-4" onclick="location.reload()">
+      <i class="bi bi-arrow-repeat me-2"></i>Nueva Consulta
+    </button>
+  </div>
+
+  <div id="errorArea" class="mt-3 text-danger text-center small fw-bold d-none"></div>
+</div>
+
+<script>
+  const searchBtn = document.getElementById("searchBtn");
+  const input = document.getElementById("userIdInput");
+
+  input.addEventListener("keypress", (e) => e.key === "Enter" && searchBtn.click());
+
+  searchBtn.addEventListener("click", async () => {
+    const userId = input.value.trim();
+    if (!userId) return;
+
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    try {
+      const res = await fetch(`/api/public/history/${userId}`);
+      if (!res.ok) throw new Error("Miembro no encontrado");
+      
+      const data = await res.json();
+      
+      document.getElementById("userName").textContent = data.name;
+      document.getElementById("userGym").textContent = data.gym_name || "";
+      document.getElementById("userPicture").src = data.image 
+        ? `data:image/jpeg;base64,${data.image}` 
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random&color=fff&size=200`;
+
+      const expDate = new Date(data.exp);
+      const isExpired = expDate < new Date();
+      const expBadge = document.getElementById("userExp");
+      expBadge.textContent = "Expira: " + expDate.toLocaleDateString();
+      expBadge.className = isExpired ? "badge-premium bg-danger text-white" : "badge-premium bg-success text-white";
+      
+      const list = document.getElementById("entriesList");
+      list.innerHTML = data.entries.map(e => `
+        <div class="entry-item">
+          <span class="fw-semibold text-dark">${new Date(e).toLocaleDateString()}</span>
+          <span class="text-muted small">${new Date(e).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+      `).join('') || '<div class="text-center text-muted small py-3">Sin registros de entrada</div>';
+
+      document.getElementById("searchView").classList.add("d-none");
+      document.getElementById("resultArea").classList.remove("d-none");
+    } catch (err) {
+      const error = document.getElementById("errorArea");
+      error.textContent = "❌ " + err.message;
+      error.classList.remove("d-none");
+    } finally {
+      searchBtn.disabled = false;
+      searchBtn.innerHTML = '<i class="bi bi-search me-2"></i>Consultar Historial';
+    }
+  });
+</script>
+{% endblock %}

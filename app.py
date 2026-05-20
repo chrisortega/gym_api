@@ -1,11 +1,10 @@
-from flask import Flask
-from flask_cors import CORS
-from routes.api import api_bp
 from flask import Flask, render_template
-from db import get_db
+from flask_cors import CORS
+from routes import all_blueprints
+
 from dotenv import load_dotenv
 import os
-load_dotenv()
+load_dotenv(override=True   )
 
 
 app = Flask(__name__)
@@ -13,9 +12,9 @@ app = Flask(__name__)
 
 
 
-# Register API Blueprint with prefix /api
-
-app.register_blueprint(api_bp, url_prefix="/api")
+# Register all API Blueprints with prefix /api
+for bp in all_blueprints:
+    app.register_blueprint(bp, url_prefix="/api")
 
 
 CORS(
@@ -72,6 +71,14 @@ def add_user():
 @app.route("/biometrics")
 def biometrics():
     return render_template("user_biometrics.html")
+
+@app.route("/myperfil")
+def user_history():
+    return render_template("user_history.html")
+
+@app.route("/superadmin")
+def superadmin_page():
+    return render_template("superadmin.html")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 3001))
