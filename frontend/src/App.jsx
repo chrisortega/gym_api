@@ -7,7 +7,7 @@ import ManageUsers from './pages/ManageUsers';
 import EditGym from './pages/EditGym';
 import MobileNav from './components/MobileNav';
 import SuperAdmin from './pages/SuperAdmin';
-import Carousel from './components/Carousel';
+
 
 // Protected Route Component to shield admin dashboards
 const ProtectedRoute = ({ children }) => {
