@@ -255,18 +255,22 @@
     </div>
   </div>
 
-  <!-- SECCIÓN DE REPORTE DIARIO -->
+  <!-- SECCIÓN DE REPORTE DE ASISTENCIA -->
   <div class="section-title mt-5">
-    <i class="bi bi-file-earmark-bar-graph text-success"></i> Reporte de Asistencia por Día
+    <i class="bi bi-file-earmark-bar-graph text-success"></i> Reporte de Asistencia
   </div>
   <div class="card dashboard-card p-4 mb-4">
     <div class="row g-3 align-items-end mb-4">
-      <div class="col-md-4">
-        <label class="form-label small fw-bold text-muted">Seleccionar Fecha</label>
-        <input type="date" id="reportDate" class="form-control rounded-3">
+      <div class="col-md-3">
+        <label class="form-label small fw-bold text-muted">Fecha Inicio</label>
+        <input type="date" id="reportStartDate" class="form-control rounded-3">
       </div>
-      <div class="col-md-8 d-flex gap-2">
-        <button class="btn btn-primary rounded-3 px-4" onclick="loadDailyReport()">
+      <div class="col-md-3">
+        <label class="form-label small fw-bold text-muted">Fecha Fin</label>
+        <input type="date" id="reportEndDate" class="form-control rounded-3">
+      </div>
+      <div class="col-md-6 d-flex gap-2">
+        <button class="btn btn-primary rounded-3 px-4" onclick="loadRangeReport()">
           <i class="bi bi-search me-2"></i>Consultar
         </button>
         <button id="downloadCsvBtn" class="btn btn-outline-success rounded-3 px-4 d-none" onclick="downloadReportCSV()">
@@ -281,12 +285,13 @@
           <tr>
             <th class="ps-4">ID</th>
             <th>Nombre del Miembro</th>
+            <th>Fecha</th>
             <th class="text-end pe-4">Hora de Entrada</th>
           </tr>
         </thead>
         <tbody id="dailyReportTable">
           <tr>
-            <td colspan="3" class="text-center py-4 text-muted small">Selecciona una fecha para generar el reporte</td>
+            <td colspan="4" class="text-center py-4 text-muted small">Selecciona un rango de fechas para generar el reporte</td>
           </tr>
         </tbody>
       </table>
@@ -412,48 +417,53 @@
   // --- REPORT LOGIC ---
   let currentReportData = [];
 
-  async function loadDailyReport() {
-    const dateStr = document.getElementById('reportDate').value;
-    if (!dateStr) return alert("Por favor selecciona una fecha");
+  async function loadRangeReport() {
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
+    if (!startDate || !endDate) return alert("Por favor selecciona ambas fechas");
 
     const tbody = document.getElementById('dailyReportTable');
     const downloadBtn = document.getElementById('downloadCsvBtn');
-    tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
     downloadBtn.classList.add('d-none');
 
     try {
       const userData = JSON.parse(localStorage.getItem('user')) || {};
-      const res = await fetch(`/api/entries/day/${userData.gym_id}/${dateStr}`, {
+      const res = await fetch(`/api/entries/range/${userData.gym_id}?start=${startDate}&end=${endDate}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       currentReportData = await res.json();
 
       if (currentReportData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted small">No se encontraron entradas para esta fecha</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted small">No se encontraron entradas para este rango</td></tr>';
         return;
       }
 
       downloadBtn.classList.remove('d-none');
       tbody.innerHTML = currentReportData.map(e => {
-        const timeStr = new Date(e.day).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+        const dateObj = new Date(e.day);
+        const dateStr = dateObj.toLocaleDateString('es-ES', { timeZone: 'UTC' });
+        const timeStr = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
         return `
           <tr>
             <td class="ps-4 text-muted">#${e.user_id}</td>
             <td class="fw-bold">${e.name}</td>
+            <td>${dateStr}</td>
             <td class="text-end pe-4">${timeStr}</td>
           </tr>
         `;
       }).join('');
 
     } catch (error) {
-      tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-danger small">Error al cargar el reporte</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger small">Error al cargar el reporte</td></tr>';
     }
   }
 
   function downloadReportCSV() {
     if (!currentReportData.length) return;
     
-    const dateStr = document.getElementById('reportDate').value;
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
     const headers = ["ID Usuario", "Nombre", "Fecha y Hora"];
     const rows = currentReportData.map(e => [
       e.user_id,
@@ -467,14 +477,17 @@
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `reporte_asistencia_${dateStr}.csv`);
+    link.setAttribute("download", `reporte_asistencia_${startDate}_a_${endDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
 
-  // Set default date to today
-  document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+  // Set default dates (start of month to today)
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  document.getElementById('reportStartDate').value = firstDay.toISOString().split('T')[0];
+  document.getElementById('reportEndDate').value = today.toISOString().split('T')[0];
 
   loadDashboard();
 </script>
