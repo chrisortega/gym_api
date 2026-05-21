@@ -2,80 +2,36 @@
 {% block title %}Restablecer Clave - GymAdmin{% endblock %}
 
 {% block content %}
-<style>
-  body { 
-    background-color: #0f172a; 
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
-    font-family: "Inter", sans-serif;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-  }
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="col-sm-10 col-md-8 col-lg-4">
+    <div class="card p-4 shadow-sm">
+      <div class="text-center mb-4">
+        <h3 class="fw-bold m-0">Restablecer Clave</h3>
+        <p class="text-muted small mt-2">Ingresa el código enviado a tu correo</p>
+      </div>
 
-  .auth-card {
-    background: rgba(30, 41, 59, 0.7);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 3rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    width: 100%;
-    max-width: 420px;
-    margin: auto;
-    color: white;
-  }
+      <form id="resetForm">
+        <div class="mb-3">
+          <label for="email" class="form-label small fw-bold text-muted text-uppercase">Email</label>
+          <input type="email" id="email" class="form-control" disabled>
+        </div>
 
-  .form-control-premium {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    border-radius: 12px;
-    padding: 0.8rem 1.25rem;
-  }
+        <div class="mb-3">
+          <label for="code" class="form-label small fw-bold text-muted text-uppercase">Código de Verificación</label>
+          <input type="text" id="code" class="form-control" required placeholder="123456">
+        </div>
 
-  .form-control-premium:disabled {
-    background: rgba(0,0,0,0.2);
-    opacity: 0.5;
-  }
+        <div class="mb-4">
+          <label for="password" class="form-label small fw-bold text-muted text-uppercase">Nueva Contraseña</label>
+          <input type="password" id="password" class="form-control" required placeholder="••••••••">
+        </div>
 
-  .btn-premium {
-    border-radius: 12px;
-    font-weight: 700;
-    padding: 0.8rem 1.5rem;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    border: none;
-    transition: all 0.3s ease;
-  }
-</style>
+        <button type="submit" id="submitBtn" class="btn btn-primary w-100 mb-3">Actualizar Contraseña</button>
+      </form>
 
-<div class="auth-card">
-  <div class="text-center mb-4">
-    <h3 class="fw-bold m-0">Restablecer Clave</h3>
-    <p class="text-muted small mt-2">Ingresa el código enviado a tu correo</p>
+      <div id="message" class="text-center small"></div>
+    </div>
   </div>
-
-  <form id="resetForm">
-    <div class="mb-3">
-      <label class="form-label small fw-bold text-muted text-uppercase">Email</label>
-      <input type="email" id="email" class="form-control form-control-premium" disabled>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label small fw-bold text-muted text-uppercase">Código de Verificación</label>
-      <input type="text" id="code" class="form-control form-control-premium" required placeholder="123456">
-    </div>
-
-    <div class="mb-4">
-      <label class="form-label small fw-bold text-muted text-uppercase">Nueva Contraseña</label>
-      <input type="password" id="password" class="form-control form-control-premium" required placeholder="••••••••">
-    </div>
-
-    <button type="submit" id="submitBtn" class="btn btn-premium w-100 text-white mb-3">Actualizar Contraseña</button>
-  </form>
-
-  <div id="message" class="text-center small"></div>
 </div>
 
 <script>
@@ -105,17 +61,17 @@
 
       const result = await res.json();
       if (res.ok) {
-        msg.className = "text-success fw-bold";
+        msg.className = "text-center text-success fw-bold small";
         msg.textContent = "✅ Contraseña actualizada. Redirigiendo...";
         setTimeout(() => window.location.href = "/", 1500);
       } else {
-        msg.className = "text-danger fw-bold";
+        msg.className = "text-center text-danger fw-bold small";
         msg.textContent = result.error || "❌ Error al restablecer.";
         btn.disabled = false;
         btn.textContent = "Actualizar Contraseña";
       }
     } catch (err) {
-      msg.className = "text-warning fw-bold";
+      msg.className = "text-center text-warning fw-bold small";
       msg.textContent = "⚠️ Error de conexión.";
       btn.disabled = false;
     }
