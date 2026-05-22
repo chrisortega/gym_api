@@ -3,7 +3,10 @@
 
 {% block content %}
 <style>
-  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
+  body {
+    background-color: #f8fafc;
+    font-family: "Inter", sans-serif;
+  }
 
   .lookup-card {
     background: white;
@@ -72,23 +75,14 @@
       <div class="mb-3">
         <i class="bi bi-person-badge-fill text-primary" style="font-size: 3rem;"></i>
       </div>
-      <h3 class="fw-bold text-dark">Mi Historial</h3>
       <p class="text-muted small">Ingresa tu ID de miembro para consultar tu estado</p>
     </div>
 
     <div class="mb-3">
-      <input type="number" class="form-control form-control-lg text-center" id="userIdInput" placeholder="Member ID">
+      <input type="number" class="form-control form-control-lg text-center" id="userIdInput" placeholder="ID">
     </div>
-    
-    <button id="searchBtn" class="btn btn-premium btn-primary w-100 mb-3">
-      <i class="bi bi-search me-2"></i>Consultar Historial
-    </button>
-    
-    <div class="text-center">
-      <a href="/" class="text-secondary small text-decoration-none fw-semibold">
-        <i class="bi bi-arrow-left me-1"></i>Volver al Login
-      </a>
-    </div>
+
+
   </div>
 
   <div id="resultArea" class="d-none">
@@ -104,7 +98,7 @@
     <div class="section-title small fw-bold text-muted text-uppercase letter-spacing-05 mb-3">
       Últimas Entradas
     </div>
-    
+
     <div id="entriesList" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
     </div>
 
@@ -117,28 +111,27 @@
 </div>
 
 <script>
-  const searchBtn = document.getElementById("searchBtn");
   const input = document.getElementById("userIdInput");
 
-  input.addEventListener("keypress", (e) => e.key === "Enter" && searchBtn.click());
+  input.addEventListener("keypress", (e) => e.key === "Enter" && consultar());
 
-  searchBtn.addEventListener("click", async () => {
+  async function consultar() {
     const userId = input.value.trim();
+    const error = document.getElementById("errorArea");
     if (!userId) return;
-
-    searchBtn.disabled = true;
-    searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
     try {
       const res = await fetch(`/api/public/history/${userId}`);
-      if (!res.ok) throw new Error("Miembro no encontrado");
-      
+      if (res.ok) {
+        error.classList.add("d-none");
+      }
+
       const data = await res.json();
-      
+
       document.getElementById("userName").textContent = data.name;
       document.getElementById("userGym").textContent = data.gym_name || "";
-      document.getElementById("userPicture").src = data.image 
-        ? `data:image/jpeg;base64,${data.image}` 
+      document.getElementById("userPicture").src = data.image
+        ? `data:image/jpeg;base64,${data.image}`
         : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random&color=fff&size=200`;
 
       const expDate = new Date(data.exp);
@@ -146,25 +139,25 @@
       const expBadge = document.getElementById("userExp");
       expBadge.textContent = "Expira: " + expDate.toLocaleDateString();
       expBadge.className = isExpired ? "badge-premium bg-danger text-white" : "badge-premium bg-success text-white";
-      
+
       const list = document.getElementById("entriesList");
       list.innerHTML = data.entries.map(e => `
         <div class="entry-item">
           <span class="fw-semibold text-dark">${new Date(e).toLocaleDateString()}</span>
-          <span class="text-muted small">${new Date(e).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          <span class="text-muted small">${new Date(e).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       `).join('') || '<div class="text-center text-muted small py-3">Sin registros de entrada</div>';
 
       document.getElementById("searchView").classList.add("d-none");
       document.getElementById("resultArea").classList.remove("d-none");
     } catch (err) {
-      const error = document.getElementById("errorArea");
-      error.textContent = "❌ " + err.message;
+
+      error.textContent = "❌ No encontrado";
       error.classList.remove("d-none");
     } finally {
-      searchBtn.disabled = false;
-      searchBtn.innerHTML = '<i class="bi bi-search me-2"></i>Consultar Historial';
+
+
     }
-  });
+  }
 </script>
 {% endblock %}

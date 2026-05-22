@@ -3,36 +3,68 @@
 {% block title %}GymAdmin{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
-  <div class="col-sm-10 col-md-8 col-lg-4">
-    <div class="card p-4 shadow-sm">
-      <div class="text-center mb-4">
-        <h3 class="fw-bold">🏋️‍♂️ GymAdmin</h3>
-        <p class="text-muted mb-0">Please log in to continue</p>
+<!-- Independent Main Content Section -->
+<main class="container py-5">
+  <div class="row justify-content-center text-center">
+    <div class="col-md-8">
+      <h1 class="display-4 fw-bold mb-3">Mi Gym Online</h1>
+      <p class="lead text-muted">
+        {% include "user_history.html" %}
+
+      </p>
+      <!-- Trigger Button for the Login Modal -->
+      <button type="button" class="btn btn-primary btn-lg px-4 mt-3" data-bs-toggle="modal"
+        data-bs-target="#loginModal">
+        Ingresar
+      </button>
+    </div>
+  </div>
+</main>
+
+<!-- Independent Login Modal Section -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-2 shadow">
+
+      <!-- Modal Header -->
+      <div class="modal-header border-0 pb-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <form id="loginForm">
-        <div class="mb-3">
-          <label for="username" class="form-label fw-semibold">Email</label>
-          <input type="email" id="username" name="username" class="form-control" required placeholder="Enter your email">
+      <!-- Modal Body (Your Original Form) -->
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <h3 class="fw-bold" id="loginModalLabel">🏋️‍♂️ GymAdmin</h3>
+          <p class="text-muted mb-0">Please log in to continue</p>
         </div>
 
-        <div class="mb-3">
-          <label for="password" class="form-label fw-semibold">Password</label>
-          <input type="password" id="password" name="password" class="form-control" required placeholder="Enter your password">
-        </div>
+        <form id="loginForm">
+          <div class="mb-3">
+            <label for="username" class="form-label fw-semibold">Email</label>
+            <input type="email" id="username" name="username" class="form-control" required
+              placeholder="Enter your email">
+          </div>
 
-        <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+          <div class="mb-3">
+            <label for="password" class="form-label fw-semibold">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required
+              placeholder="Enter your password">
+          </div>
 
-        <div class="mt-3 text-center">
-          <a href="/forgot" class="text-secondary text-decoration-none small">Forgot password?</a>
-        </div>
-      </form>
+          <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
 
-      <div id="message" class="text-center mt-3 text-info small"></div>
+          <div class="mt-3 text-center">
+            <a href="/forgot" class="text-secondary text-decoration-none small">Forgot password?</a>
+          </div>
+        </form>
+
+        <div id="message" class="text-center mt-3 text-info small"></div>
+      </div>
+
     </div>
   </div>
 </div>
+
 
 <script>
   // Redirect if already logged in
@@ -57,7 +89,7 @@
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
 
