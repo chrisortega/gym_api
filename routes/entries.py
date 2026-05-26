@@ -111,7 +111,7 @@ def add_entry():
         cursor.execute("SELECT id FROM users WHERE id = %s AND gym_id = %s AND exp >= NOW()", (user_id, gym_id))
         user = cursor.fetchone()
         if not user:
-            return jsonify({"error": "exte usuaio esta expirado"}), 426
+            return jsonify({"error": "Usuario expirado"}), 426
 
         # Insert entry
         cursor.execute("INSERT INTO entries (users_id, gym_id) VALUES (%s, %s)", (user_id, gym_id))
