@@ -87,6 +87,36 @@ def get_entries_by_day(gym_id, date_str):
         conn.close()
 
 
+@entries_bp.route("/entries/range/<int:gym_id>", methods=["GET"])
+@authenticate_token
+def get_entries_by_range(gym_id):
+    start_date = request.args.get("start")
+    end_date = request.args.get("end")
+    if not start_date or not end_date:
+        return jsonify({"error": "Missing start or end date"}), 400
+
+    query = """
+        SELECT entries.*, users.name, users.id AS user_id
+        FROM entries
+        JOIN users ON entries.users_id = users.id
+        WHERE DATE(day) BETWEEN %s AND %s AND entries.gym_id = %s
+        ORDER BY day DESC
+    """
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(query, (start_date, end_date, gym_id))
+        results = cursor.fetchall()
+        return jsonify(results), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @entries_bp.route("/entries", methods=["POST"])
 @authenticate_token
