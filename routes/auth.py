@@ -4,7 +4,6 @@ from flask import Blueprint, request, jsonify
 from db import get_db
 from utils.auth import generate_access_token
 import bcrypt
-from twilio.rest import Client
 auth_bp = Blueprint("auth", __name__)
 
 

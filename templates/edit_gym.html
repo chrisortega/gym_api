@@ -3,7 +3,10 @@
 
 {% block content %}
 <style>
-  body { background-color: #f8fafc; font-family: "Inter", sans-serif; }
+  body {
+    background-color: #f8fafc;
+    font-family: "Inter", sans-serif;
+  }
 
   .page-header {
     margin-bottom: 2rem;
@@ -81,7 +84,7 @@
     <div class="col-lg-6">
       <div class="settings-card h-100">
         <h5 class="fw-bold mb-4 text-primary">Identidad Visual</h5>
-        
+
         <label class="form-label">Logo del Gimnasio</label>
         <div class="preview-box">
           <img id="logoPreview" class="logo-preview" src="/static/default-gym.png">
@@ -99,10 +102,16 @@
     <div class="col-lg-6">
       <div class="settings-card h-100">
         <h5 class="fw-bold mb-4 text-primary">Configuración General</h5>
-        
+
         <div class="mb-4">
           <label class="form-label">Nombre del Gimnasio</label>
-          <input type="text" class="form-control rounded-3 py-2 px-3" id="gymName" required placeholder="Nombre de tu negocio">
+          <input type="text" class="form-control rounded-3 py-2 px-3" id="gymName" required
+            placeholder="Nombre de tu negocio">
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Capacidad Maxima</label>
+          <input type="number" class="form-control rounded-3 py-2 px-3" id="gymCapacity" required placeholder="100">
         </div>
 
         <div class="alert bg-light border-0 rounded-4 p-4 mt-5">
@@ -110,7 +119,8 @@
             <i class="bi bi-info-circle-fill text-primary" style="font-size: 1.5rem;"></i>
             <div>
               <h6 class="fw-bold text-dark">Información de Perfil</h6>
-              <p class="small text-muted mb-0">Esta información será visible para tus administradores y en el dashboard de entradas público.</p>
+              <p class="small text-muted mb-0">Esta información será visible para tus administradores y en el dashboard
+                de entradas público.</p>
             </div>
           </div>
         </div>
@@ -151,8 +161,9 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      
+
       document.getElementById("gymName").value = data.name || "";
+      document.getElementById("gymCapacity").value = data.capacity || "";
       if (data.image) document.getElementById("logoPreview").src = `data:image/jpeg;base64,${data.image}`;
       if (data.back) document.getElementById("backPreview").src = `data:image/jpeg;base64,${data.back}`;
     } catch (err) {
@@ -165,6 +176,7 @@
     e.preventDefault();
     const formData = new FormData();
     formData.append("name", document.getElementById("gymName").value);
+    formData.append("capacity", document.getElementById("gymCapacity").value);
 
     const logo = document.getElementById("imageInput").files[0];
     const back = document.getElementById("backInput").files[0];

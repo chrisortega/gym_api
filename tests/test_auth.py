@@ -1,4 +1,3 @@
-import pytest
 from routes.auth import generate_verification_code
 
 def test_generate_verification_code_default_length():

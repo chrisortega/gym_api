@@ -6,14 +6,9 @@ from utils.auth import authenticate_token, generate_access_token
 import bcrypt
 import base64
 from datetime import datetime
-import base64
-from flask import request, jsonify
-from utils.auth import authenticate_token
-from db import get_db
 from PIL import Image
 import io
-import base64
-
+    
 
 api_bp = Blueprint("api", __name__)
 @api_bp.route("/", methods=["GET"])
@@ -299,7 +294,7 @@ def get_gyms():
 
 @api_bp.route("/gym/<int:gym_id>", methods=["PUT"])
 @authenticate_token
-def update_gym(gym_id):
+def update_gym(gym_id):   
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -375,9 +370,6 @@ def update_gym(gym_id):
 @api_bp.route("/gym/<int:gym_id>", methods=["GET"])
 @authenticate_token
 def get_gym(gym_id):
-    from db import get_db
-    import base64
-
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)

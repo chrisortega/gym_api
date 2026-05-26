@@ -26,6 +26,7 @@ def update_gym(gym_id):
         back_file = request.files.get("back")
         image_base64 = request.form.get("image")
         back_base64 = request.form.get("back")
+        capacity = request.form.get("capacity")
 
         if not name and not image_file and not back_file and not image_base64 and not back_base64:
             return jsonify({"error": "Nothing to update"}), 400
@@ -37,6 +38,10 @@ def update_gym(gym_id):
         if name:
             updates.append("name = %s")
             params.append(name)
+
+        if capacity:
+            updates.append("capacity = %s")
+            params.append(capacity)
 
         # Handle logo image (file)
         if image_file:
@@ -92,11 +97,11 @@ def update_gym(gym_id):
 
 @gyms_bp.route("/gym/<int:gym_id>", methods=["GET"])
 @authenticate_token
-def get_gym(gym_id):
+def get_gym(gym_id):        
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, name, admin_id, image, back FROM gym WHERE id = %s", (gym_id,))
+        cursor.execute("SELECT *FROM gym WHERE id = %s", (gym_id,))
         gym = cursor.fetchone()
 
         if not gym:

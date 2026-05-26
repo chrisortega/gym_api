@@ -303,7 +303,7 @@
   const token = localStorage.getItem('token');
   if (!token) window.location.href = '/';
 
-  const MAX_CAPACITY = 100;
+  var MAX_CAPACITY = 100;
 
   async function loadDashboard() {
     try {
@@ -330,7 +330,7 @@
       if (gym.image) {
         document.getElementById('gymThumb').src = `data:image/jpeg;base64,${gym.image}`;
       }
-
+      MAX_CAPACITY = gym.capacity;
       document.getElementById('gymName').textContent = gym.name || 'Gimnasio';
       document.getElementById('gymSubtitle').textContent = gym.description || 'Bienvenido de nuevo';
 
@@ -471,7 +471,7 @@
       new Date(e.day).toLocaleString('es-ES', { timeZone: 'UTC' })
     ]);
 
-    let csvContent = "data:text/csv;charset=utf-8," 
+    let csvContent = "data:text/csv;charset=utf-8,"
       + [headers, ...rows].map(r => r.join(",")).join("\n");
 
     const encodedUri = encodeURI(csvContent);
