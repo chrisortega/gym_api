@@ -16,7 +16,8 @@ def add_user():
     gym_id = data.get("gym_id")
     image_base64 = data.get("image")
 
-    # Decode image from base64 to binary if provided
+    # 
+    # code image from base64 to binary if provided
     image_blob = None
     if image_base64:
         try:
@@ -187,8 +188,13 @@ def get_public_user_history(user_id):
         # Get entries
         cursor.execute(query_entries, (user_id,))
         entries = cursor.fetchall()
+        for row in entries:            
+            if row.get("day"):                
+                # Converts the raw datetime object to your desired string format
+                row["day"] = row["day"].strftime("%Y-%m-%d %H:%M:%S")        
         user["entries"] = [entry["day"] for entry in entries]
-        
+        # Format the datetime objects safely in Python loop
+
         return jsonify(user), 200
         
     except Exception as e:
