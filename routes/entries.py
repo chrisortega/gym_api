@@ -1,10 +1,15 @@
 import base64
 import io
-from datetime import datetime
 from flask import Blueprint, request, jsonify
 from db import get_db
 from utils.auth import authenticate_token
 from PIL import Image
+from datetime import datetime, timedelta, timezone
+
+# Manually create the Pacific Daylight Time offset (UTC-7)
+pacific_tz = timezone(timedelta(hours=-7))
+now_pacific = datetime.now(pacific_tz)
+
 
 entries_bp = Blueprint("entries", __name__)
 
@@ -118,6 +123,7 @@ def get_entries_by_range(gym_id):
         conn.close()
 
 
+
 @entries_bp.route("/entries", methods=["POST"])
 @authenticate_token
 def add_entry():
@@ -128,36 +134,42 @@ def add_entry():
     if not user_id or not gym_id:
         return jsonify({"error": "Missing user_id or gym_id"}), 400
 
-    # Check if user belongs to this gym
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
+        
+        # Check if user belongs to this gym
         cursor.execute("SELECT id FROM users WHERE id = %s AND gym_id = %s", (user_id, gym_id))
         user = cursor.fetchone()
         if not user:
             return jsonify({"error": "Este usuario no está en este gimnasio"}), 426
 
-        # check if the user ius not expired
-        cursor.execute("SELECT id FROM users WHERE id = %s AND gym_id = %s AND exp >= NOW()", (user_id, gym_id))
+        # 2. Check if the user is not expired (Passing Python's Pacific time instead of SQL NOW())
+        cursor.execute(
+            "SELECT id FROM users WHERE id = %s AND gym_id = %s AND exp >= %s", 
+            (user_id, gym_id, now_pacific)
+        )
         user = cursor.fetchone()
         if not user:
             return jsonify({"error": "Usuario expirado"}), 426
 
-        # Insert entry
-        cursor.execute("INSERT INTO entries (users_id, gym_id) VALUES (%s, %s)", (user_id, gym_id))
+        # 3. Insert entry with the explicit Pacific timestamp
+        query = "INSERT INTO entries (users_id, gym_id, day) VALUES (%s, %s, %s)"
+        cursor.execute(query, (user_id, gym_id, now_pacific))
         conn.commit()
 
         return jsonify({
             "message": "Entry registered successfully",
             "id": cursor.lastrowid,
             "user_id": user_id,
-            "entry_date": str(datetime.now().date())
+            "entry_date": now_pacific.strftime("%Y-%m-%d %H:%M:%S")
         }), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
+
 
 @entries_bp.route("/entries/user/<int:user_id>", methods=["GET"])
 @authenticate_token
