@@ -185,6 +185,8 @@ def get_entries_by_user(user_id):
 @authenticate_token
 def get_recent_entries_by_gym(gym_id):
     limit = int(request.args.get("limit", 20))
+    
+    # Removed DATE_FORMAT completely so there are exactly two %s symbols
     query = """
         SELECT entries.id, entries.day, users.name, users.id as user_id
         FROM entries
@@ -198,9 +200,18 @@ def get_recent_entries_by_gym(gym_id):
         cursor = conn.cursor(dictionary=True)
         cursor.execute(query, (gym_id, limit))
         results = cursor.fetchall()
+        
+        # Format the datetime objects safely in Python loop
+        for row in results:
+            if row.get("day"):
+                # Converts the raw datetime object to your desired string format
+                row["day"] = row["day"].strftime("%Y-%m-%d %H:%M:%S")
+                
         return jsonify(results), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
+
+
