@@ -135,6 +135,62 @@
   </div>
 </form>
 
+<div class="row g-4 mt-2 d-none" id="workersSection">
+  <div class="col-12">
+    <div class="settings-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold text-primary m-0">Trabajadores del Gimnasio</h5>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addWorkerModal">
+          <i class="bi bi-person-plus me-1"></i> Añadir Trabajador
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="workersTableBody">
+            <tr><td colspan="3" class="text-center text-muted">Cargando trabajadores...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Trabajador -->
+<div class="modal fade" id="addWorkerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">Nuevo Trabajador</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addWorkerForm">
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control rounded-3" id="workerName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control rounded-3" id="workerEmail" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-control rounded-3" id="workerPassword" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 rounded-3 py-2">Guardar Trabajador</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   const token = localStorage.getItem("token");
   const params = new URLSearchParams(window.location.search);
@@ -147,13 +203,106 @@
   if (!gymId) {
     const stored = JSON.parse(localStorage.getItem("user") || "{}");
     gymId = stored.gym_id;
+    if (stored.type === "worker") {
+        window.location.href = "/dashboard";
+    }
   }
 
   if (!token || !gymId) window.location.href = "/";
   else {
     form.classList.remove("d-none");
+    document.getElementById("workersSection").classList.remove("d-none");
     loadGymData();
+    loadWorkers();
   }
+
+  async function loadWorkers() {
+    try {
+      const res = await fetch(`/api/gym/${gymId}/workers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Error fetching workers");
+      const data = await res.json();
+      
+      const tbody = document.getElementById("workersTableBody");
+      tbody.innerHTML = "";
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">No hay trabajadores registrados.</td></tr>`;
+        return;
+      }
+      
+      data.forEach(worker => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="fw-bold text-dark">${worker.name || '-'}</td>
+            <td class="text-muted">${worker.email}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-danger" onclick="removeWorker(${worker.id})">
+                <i class="bi bi-trash"></i> Eliminar
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    } catch(e) {
+      console.error(e);
+      document.getElementById("workersTableBody").innerHTML = `<tr><td colspan="3" class="text-center text-danger">Error al cargar trabajadores.</td></tr>`;
+    }
+  }
+
+  async function removeWorker(workerId) {
+    if(!confirm("¿Estás seguro de eliminar a este trabajador?")) return;
+    try {
+      const res = await fetch(`/api/gym/${gymId}/workers/${workerId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if(res.ok) {
+        successAlert.textContent = "✅ Trabajador eliminado.";
+        successAlert.classList.remove("d-none");
+        errorAlert.classList.add("d-none");
+        setTimeout(() => successAlert.classList.add("d-none"), 3000);
+        loadWorkers();
+      } else {
+        alert("Error al eliminar trabajador");
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  document.getElementById("addWorkerForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("workerName").value;
+    const email = document.getElementById("workerEmail").value;
+    const password = document.getElementById("workerPassword").value;
+    
+    try {
+      const res = await fetch(`/api/gym/${gymId}/workers`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Close modal
+        const modalEl = document.getElementById("addWorkerModal");
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        if (modal) modal.hide();
+        document.getElementById("addWorkerForm").reset();
+        
+        successAlert.textContent = "✅ Trabajador añadido correctamente.";
+        successAlert.classList.remove("d-none");
+        errorAlert.classList.add("d-none");
+        setTimeout(() => successAlert.classList.add("d-none"), 3000);
+        
+        loadWorkers();
+      } else {
+        alert(data.error || "Error al añadir trabajador");
+      }
+    } catch(err) { console.error(err); }
+  });
 
   async function loadGymData() {
     try {

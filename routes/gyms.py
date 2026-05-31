@@ -18,6 +18,8 @@ def get_gyms():
 @gyms_bp.route("/gym/<int:gym_id>", methods=["PUT"])
 @authenticate_token
 def update_gym(gym_id):
+    if request.user.get("type") == "worker":
+        return jsonify({"error": "Workers are not allowed to update the gym"}), 403
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -127,3 +129,78 @@ def get_gym(gym_id):
     finally:
         cursor.close()
         conn.close()
+
+@gyms_bp.route("/gym/<int:gym_id>/workers", methods=["GET"])
+@authenticate_token
+def get_gym_workers(gym_id):
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, name, email, username, phone FROM admin WHERE gym_id = %s AND type = 'worker' AND active = 1", (gym_id,))
+        workers = cursor.fetchall()
+        return jsonify(workers), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@gyms_bp.route("/gym/<int:gym_id>/workers", methods=["POST"])
+@authenticate_token
+def add_gym_worker(gym_id):
+    if request.user.get("type") == "worker":
+        return jsonify({"error": "Workers cannot add other workers"}), 403
+    try:
+        data = request.json
+        name = data.get("name")
+        email = data.get("email")
+        password = data.get("password")
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
+            
+        import bcrypt
+        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Check if email exists
+        cursor.execute("SELECT id FROM admin WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({"error": "Email already exists"}), 400
+            
+        cursor.execute(
+            "INSERT INTO admin (name, email, password, gym_id, type, active) VALUES (%s, %s, %s, %s, 'worker', 1)",
+            (name, email, hashed, gym_id)
+        )
+        conn.commit()
+        
+        return jsonify({"message": "Worker added successfully", "worker_id": cursor.lastrowid}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@gyms_bp.route("/gym/<int:gym_id>/workers/<int:worker_id>", methods=["DELETE"])
+@authenticate_token
+def remove_gym_worker(gym_id, worker_id):
+    if request.user.get("type") == "worker":
+        return jsonify({"error": "Workers cannot remove workers"}), 403
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE admin SET active = 0 WHERE id = %s AND gym_id = %s AND type = 'worker'", (worker_id, gym_id))
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Worker not found"}), 404
+            
+        return jsonify({"message": "Worker removed successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+

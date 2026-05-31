@@ -24,25 +24,25 @@ def login():
         # It's an email, regular admin
         query = """
             SELECT admin.password as password, admin.email as email, admin.id as user_id, admin.username as username, 
-                   gym.id as gym_id, gym.name as gym_name 
+                   gym.id as gym_id, gym.name as gym_name, admin.type as type
             FROM admin 
-            INNER JOIN gym ON admin.id = gym.admin_id 
-            WHERE admin.email = %s
+            LEFT JOIN gym ON (admin.id = gym.admin_id OR admin.gym_id = gym.id)
+            WHERE admin.email = %s AND admin.active = 1
         """
     else:
         
         # It's a username, super admin (might not have a gym)
         query = """
             SELECT admin.password as password, admin.email as email, admin.id as user_id, admin.username as username,
-                   gym.id as gym_id, gym.name as gym_name 
+                   gym.id as gym_id, gym.name as gym_name, admin.type as type
             FROM admin 
-            LEFT JOIN gym ON admin.id = gym.admin_id 
-            WHERE admin.username = %s
+            LEFT JOIN gym ON (admin.id = gym.admin_id OR admin.gym_id = gym.id)
+            WHERE admin.username = %s AND admin.active = 1
         """
         
     cursor.execute(query, (login_id,))
     user = cursor.fetchone()
-    
+    print("user", user,login_id)
     if not user or not bcrypt.checkpw(password.encode(), user["password"].encode()):
         return jsonify({"error": "Invalid credentials"}), 401
 
@@ -56,7 +56,8 @@ def login():
         "gym_id": user["gym_id"],
         "gym_name": user["gym_name"],
         "token": token,
-        "is_super_admin": is_super_admin
+        "is_super_admin": is_super_admin,
+        "type": user.get("type") or "owner"
     })
     
 
