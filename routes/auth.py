@@ -1,69 +1,76 @@
+"""
+Authentication routes for the application.
+"""
 import random
 import string
 from flask import Blueprint, request, jsonify
 from db import get_db
 from utils.auth import generate_access_token
 import bcrypt
+
 auth_bp = Blueprint("auth", __name__)
 
 
 # ---------------- LOGIN ----------------
 @auth_bp.route("/login", methods=["POST"])
-def login():    
+def login():
+    """Authenticate a user or superadmin and return a JWT token."""
     data = request.json
-    login_id = data.get("email") # Could be username or email
+    login_id = data.get("email")  # Could be username or email
     password = data.get("password")
-    
+
     if not login_id or not password:
         return jsonify({"error": "Missing credentials"}), 400
 
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    print("it's a username, super admin (might not have a gym)"+login_id)
+    print("it's a username, super admin (might not have a gym)" + login_id)
     if "@" in login_id:
         # It's an email, regular admin
         query = """
             SELECT admin.password as password, admin.email as email, admin.id as user_id, admin.username as username, 
-                   gym.id as gym_id, gym.name as gym_name 
+                   gym.id as gym_id, gym.name as gym_name, admin.type as type
             FROM admin 
-            INNER JOIN gym ON admin.id = gym.admin_id 
-            WHERE admin.email = %s
+            LEFT JOIN gym ON (admin.id = gym.admin_id OR admin.gym_id = gym.id)
+            WHERE admin.email = %s AND admin.active = 1
         """
     else:
-        
         # It's a username, super admin (might not have a gym)
         query = """
             SELECT admin.password as password, admin.email as email, admin.id as user_id, admin.username as username,
-                   gym.id as gym_id, gym.name as gym_name 
+                   gym.id as gym_id, gym.name as gym_name, admin.type as type
             FROM admin 
-            LEFT JOIN gym ON admin.id = gym.admin_id 
-            WHERE admin.username = %s
+            LEFT JOIN gym ON (admin.id = gym.admin_id OR admin.gym_id = gym.id)
+            WHERE admin.username = %s AND admin.active = 1
         """
-        
+
     cursor.execute(query, (login_id,))
     user = cursor.fetchone()
-    
+    print("user", user, login_id)
     if not user or not bcrypt.checkpw(password.encode(), user["password"].encode()):
         return jsonify({"error": "Invalid credentials"}), 401
 
     is_super_admin = bool(user.get("username"))
 
     token = generate_access_token(user)
-    return jsonify({
-        "userId": user["user_id"],
-        "email": user["email"],
-        "access_token": token,
-        "gym_id": user["gym_id"],
-        "gym_name": user["gym_name"],
-        "token": token,
-        "is_super_admin": is_super_admin
-    })
-    
+    return jsonify(
+        {
+            "userId": user["user_id"],
+            "email": user["email"],
+            "access_token": token,
+            "gym_id": user["gym_id"],
+            "gym_name": user["gym_name"],
+            "token": token,
+            "is_super_admin": is_super_admin,
+            "type": user.get("type") or "owner",
+        }
+    )
 
 
 # ---------------- RESET PASSWORD ----------------
 @auth_bp.route("/reset-password", methods=["POST"])
 def reset_password():
+    """Reset the password using a verification code."""
     data = request.json
     email = data.get("email")
     new_password = data.get("password")
@@ -100,19 +107,22 @@ def reset_password():
 
 # --- Helper to generate random 6-digit code ---
 def generate_verification_code(length=6):
+    """Generate a random numeric verification code of the specified length."""
     return ''.join(random.choices(string.digits, k=length))
 
+
 # --- Flask route ---
-@auth_bp.route('/send-password-code', methods=['POST'])
+@auth_bp.route("/send-password-code", methods=["POST"])
 def send_password_code():
+    """Generate and send a verification code to the user's email."""
     data = request.get_json()
-    email = data.get('email')
+    email = data.get("email")
 
     if not email:
-        return jsonify({'error': 'Missing email'}), 400
+        return jsonify({"error": "Missing email"}), 400
 
     verification_code = generate_verification_code()
-    
+
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -122,22 +132,21 @@ def send_password_code():
             WHERE email = %s;
         """
         cursor.execute(query, (verification_code, email))
-        
+
         # Capture how many rows were updated before committing
         rows_affected = cursor.rowcount
-        
+
         conn.commit()
         cursor.close()
         conn.close()
-        
+
         # Check if the email actually matched an existing user
         if rows_affected == 0:
             return jsonify({"error": f"No account found with email: {email}"}), 404
 
         # TODO: Send code via email/SMS instead of returning it in the response
         return jsonify({"message": "Verification code set successfully"}), 200
-        
+
     except Exception as err:
         print("Database error:", err)
-        return jsonify({'error': f'Database error. {err}'}), 500
-
+        return jsonify({"error": f"Database error. {err}"}), 500
