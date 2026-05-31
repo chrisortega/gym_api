@@ -1,6 +1,3 @@
-"""
-Superadmin routes for managing gyms and admin accounts.
-"""
 import bcrypt
 from flask import Blueprint, request, jsonify
 from db import get_db
@@ -8,10 +5,8 @@ from utils.auth import authenticate_token
 
 superadmin_bp = Blueprint("superadmin", __name__)
 
-
 # Basic middleware to check if super admin
 def is_super_admin(user_id):
-    """Check if a given user_id belongs to a super admin."""
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT username FROM admin WHERE id = %s", (user_id,))
@@ -20,20 +15,16 @@ def is_super_admin(user_id):
     conn.close()
     return user and user.get("username") is not None
 
-
 @superadmin_bp.route("/superadmin/gyms", methods=["GET"])
 @authenticate_token
 def get_all_gyms():
-    """Retrieve all gyms and their associated owners for the super admin dashboard."""
-    user_id = request.user.get("user_id") or request.user.get(
-        "id"
-    )  # JWT payload has user_id
+    user_id = request.user.get("user_id") or request.user.get("id") # JWT payload has user_id
     if not is_super_admin(user_id):
         return jsonify({"error": "Unauthorized"}), 403
-
+        
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-
+    
     query = """
         SELECT gym.id as gym_id, gym.name as gym_name, admin.id as admin_id, admin.email as admin_email
         FROM gym
@@ -41,16 +32,14 @@ def get_all_gyms():
     """
     cursor.execute(query)
     gyms = cursor.fetchall()
-
+    
     cursor.close()
     conn.close()
     return jsonify(gyms), 200
 
-
 @superadmin_bp.route("/superadmin/gyms", methods=["POST"])
 @authenticate_token
 def add_gym_and_admin():
-    """Create a new gym and assign it a new admin (owner)."""
     user_id = request.user.get("user_id") or request.user.get("id")
     if not is_super_admin(user_id):
         return jsonify({"error": "Unauthorized"}), 403
@@ -59,7 +48,7 @@ def add_gym_and_admin():
     gym_name = data.get("gym_name")
     admin_email = data.get("admin_email")
     admin_password = data.get("admin_password")
-
+    
     if not gym_name or not admin_email or not admin_password:
         return jsonify({"error": "Missing fields"}), 400
 
@@ -67,20 +56,15 @@ def add_gym_and_admin():
 
     conn = get_db()
     cursor = conn.cursor()
-
+    
     try:
         # Create admin
-        cursor.execute(
-            "INSERT INTO admin (email, password) VALUES (%s, %s)",
-            (admin_email, hashed_pw),
-        )
+        cursor.execute("INSERT INTO admin (email, password) VALUES (%s, %s)", (admin_email, hashed_pw))
         new_admin_id = cursor.lastrowid
-
+        
         # Create gym
-        cursor.execute(
-            "INSERT INTO gym (name, admin_id) VALUES (%s, %s)", (gym_name, new_admin_id)
-        )
-
+        cursor.execute("INSERT INTO gym (name, admin_id) VALUES (%s, %s)", (gym_name, new_admin_id))
+        
         conn.commit()
         return jsonify({"message": "Gym and admin created successfully"}), 201
     except Exception as e:
@@ -90,11 +74,9 @@ def add_gym_and_admin():
         cursor.close()
         conn.close()
 
-
 @superadmin_bp.route("/superadmin/admins/<int:admin_id>", methods=["PUT"])
 @authenticate_token
 def update_admin_email(admin_id):
-    """Update the email address of a regular gym admin."""
     user_id = request.user.get("user_id") or request.user.get("id")
     if not is_super_admin(user_id):
         return jsonify({"error": "Unauthorized"}), 403
@@ -107,10 +89,7 @@ def update_admin_email(admin_id):
     conn = get_db()
     cursor = conn.cursor()
     try:
-        cursor.execute(
-            "UPDATE admin SET email = %s WHERE id = %s AND username IS NULL",
-            (new_email, admin_id),
-        )
+        cursor.execute("UPDATE admin SET email = %s WHERE id = %s AND username IS NULL", (new_email, admin_id))
         conn.commit()
         return jsonify({"message": "Admin email updated successfully"}), 200
     except Exception as e:
@@ -119,11 +98,9 @@ def update_admin_email(admin_id):
         cursor.close()
         conn.close()
 
-
 @superadmin_bp.route("/superadmin/gyms/<int:gym_id>", methods=["DELETE"])
 @authenticate_token
 def delete_gym(gym_id):
-    """Delete a gym from the system."""
     user_id = request.user.get("user_id") or request.user.get("id")
     if not is_super_admin(user_id):
         return jsonify({"error": "Unauthorized"}), 403
