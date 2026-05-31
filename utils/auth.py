@@ -10,6 +10,7 @@ def generate_access_token(token_data):
     payload = {
         "user_id": token_data["user_id"],
         "gym_id": token_data["gym_id"],
+        "type": token_data.get("type", "owner"),
         "exp": datetime.utcnow() + timedelta(days=1)      
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")

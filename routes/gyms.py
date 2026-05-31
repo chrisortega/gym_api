@@ -1,3 +1,6 @@
+"""
+Routes for managing gyms and gym settings.
+"""
 import base64
 from flask import Blueprint, request, jsonify
 from db import get_db
@@ -9,6 +12,7 @@ gyms_bp = Blueprint("gyms", __name__)
 @gyms_bp.route("/gyms", methods=["GET"])
 @authenticate_token
 def get_gyms():
+    """Retrieve all gyms from the database."""
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM gym")
@@ -18,6 +22,9 @@ def get_gyms():
 @gyms_bp.route("/gym/<int:gym_id>", methods=["PUT"])
 @authenticate_token
 def update_gym(gym_id):
+    """Update gym details such as name, capacity, and images."""
+    if request.user.get("type") == "worker":
+        return jsonify({"error": "Workers are not allowed to update the gym"}), 403
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -28,7 +35,13 @@ def update_gym(gym_id):
         back_base64 = request.form.get("back")
         capacity = request.form.get("capacity")
 
-        if not name and not image_file and not back_file and not image_base64 and not back_base64:
+        if (
+            not name
+            and not image_file
+            and not back_file
+            and not image_base64
+            and not back_base64
+        ):
             return jsonify({"error": "Nothing to update"}), 400
 
         # Build dynamic query and params
@@ -94,10 +107,10 @@ def update_gym(gym_id):
         conn.close()
 
 
-
 @gyms_bp.route("/gym/<int:gym_id>", methods=["GET"])
 @authenticate_token
-def get_gym(gym_id):        
+def get_gym(gym_id):
+    """Retrieve detailed information about a specific gym."""
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
@@ -113,16 +126,105 @@ def get_gym(gym_id):
         else:
             gym["image"] = None
 
-     # Convert image (BLOB) to base64 if present
+        # Convert image (BLOB) to base64 if present
         if gym.get("back"):
             gym["back"] = base64.b64encode(gym["back"]).decode("utf-8")
         else:
-            gym["back"] = None            
+            gym["back"] = None
 
         return jsonify(gym), 200
 
     except Exception as e:
         print("Error loading gym:", e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@gyms_bp.route("/gym/<int:gym_id>/workers", methods=["GET"])
+@authenticate_token
+def get_gym_workers(gym_id):
+    """Retrieve all active workers for a specific gym."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT id, name, email, username, phone FROM admin WHERE gym_id = %s AND type = 'worker' AND active = 1",
+            (gym_id,),
+        )
+        workers = cursor.fetchall()
+        return jsonify(workers), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@gyms_bp.route("/gym/<int:gym_id>/workers", methods=["POST"])
+@authenticate_token
+def add_gym_worker(gym_id):
+    """Add a new worker admin to the gym."""
+    if request.user.get("type") == "worker":
+        return jsonify({"error": "Workers cannot add other workers"}), 403
+    try:
+        data = request.json
+        name = data.get("name")
+        email = data.get("email")
+        password = data.get("password")
+
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
+
+        import bcrypt
+
+        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Check if email exists
+        cursor.execute("SELECT id FROM admin WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({"error": "Email already exists"}), 400
+
+        cursor.execute(
+            "INSERT INTO admin (name, email, password, gym_id, type, active) VALUES (%s, %s, %s, %s, 'worker', 1)",
+            (name, email, hashed, gym_id),
+        )
+        conn.commit()
+
+        return jsonify(
+            {"message": "Worker added successfully", "worker_id": cursor.lastrowid}
+        ), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@gyms_bp.route("/gym/<int:gym_id>/workers/<int:worker_id>", methods=["DELETE"])
+@authenticate_token
+def remove_gym_worker(gym_id, worker_id):
+    """Remove (deactivate) a worker from a gym."""
+    if request.user.get("type") == "worker":
+        return jsonify({"error": "Workers cannot remove workers"}), 403
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE admin SET active = 0 WHERE id = %s AND gym_id = %s AND type = 'worker'",
+            (worker_id, gym_id),
+        )
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Worker not found"}), 404
+
+        return jsonify({"message": "Worker removed successfully"}), 200
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
