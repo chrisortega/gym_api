@@ -61,7 +61,6 @@ def update_user2():
     conn.commit()
     return jsonify({"message": "User updated successfully."}), 200
 
-
 @users_bp.route("/users/<int:user_id>", methods=["GET"])
 @authenticate_token
 def get_user(user_id):
