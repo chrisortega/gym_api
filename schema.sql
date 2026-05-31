@@ -33,9 +33,6 @@ CREATE TABLE `admin` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `username` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `active` int DEFAULT '1',
-  `type` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT 'owner',
-  `gym_id` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -79,7 +76,7 @@ CREATE TABLE `entries` (
   KEY `idx_entries_user` (`users_id`),
   CONSTRAINT `fk_entries_gym` FOREIGN KEY (`gym_id`) REFERENCES `gym` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_entries_user` FOREIGN KEY (`users_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -97,9 +94,6 @@ CREATE TABLE `gym` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `back` longblob,
-  `entrada` datetime DEFAULT NULL,
-  `salida` datetime DEFAULT NULL,
-  `capacity` int DEFAULT '100',
   PRIMARY KEY (`id`),
   KEY `fk_gym_admin` (`admin_id`),
   CONSTRAINT `fk_gym_admin` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE CASCADE
@@ -126,7 +120,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   KEY `idx_users_gym` (`gym_id`),
   CONSTRAINT `fk_users_gym` FOREIGN KEY (`gym_id`) REFERENCES `gym` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -138,4 +132,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-30 23:20:28
+-- Dump completed on 2026-05-15 15:17:40
