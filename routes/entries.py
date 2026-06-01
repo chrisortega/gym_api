@@ -7,11 +7,7 @@ from flask import Blueprint, request, jsonify
 from db import get_db
 from utils.auth import authenticate_token
 from PIL import Image
-from datetime import datetime, timedelta, timezone
 
-# Manually create the Pacific Daylight Time offset (UTC-7)
-pacific_tz = timezone(timedelta(hours=-7))
-now_pacific = datetime.now(pacific_tz)
 
 
 entries_bp = Blueprint("entries", __name__)
@@ -152,26 +148,31 @@ def add_entry():
         if not user:
             return jsonify({"error": "Este usuario no está en este gimnasio"}), 426
 
-        # 2. Check if the user is not expired (Passing Python's Pacific time instead of SQL NOW())
+        # 2. Check if the user is not expired
         cursor.execute(
-            "SELECT id FROM users WHERE id = %s AND gym_id = %s AND exp >= %s",
-            (user_id, gym_id, now_pacific),
+            "SELECT id FROM users WHERE id = %s AND gym_id = %s AND exp >= CURDATE()",
+            (user_id, gym_id),
         )
         user = cursor.fetchone()
         if not user:
             return jsonify({"error": "Usuario expirado"}), 426
 
-        # 3. Insert entry with the explicit Pacific timestamp
-        query = "INSERT INTO entries (users_id, gym_id, day) VALUES (%s, %s, %s)"
-        cursor.execute(query, (user_id, gym_id, now_pacific))
+        # 3. Insert entry using database NOW()
+        query = "INSERT INTO entries (users_id, gym_id, day) VALUES (%s, %s, NOW())"
+        cursor.execute(query, (user_id, gym_id))
+        new_entry_id = cursor.lastrowid
         conn.commit()
+        
+        cursor.execute("SELECT day FROM entries WHERE id = %s", (new_entry_id,))
+        entry_row = cursor.fetchone()
+        entry_date_str = entry_row["day"].strftime("%Y-%m-%d %H:%M:%S") if entry_row and entry_row.get("day") else None
 
         return jsonify(
             {
                 "message": "Entry registered successfully",
-                "id": cursor.lastrowid,
+                "id": new_entry_id,
                 "user_id": user_id,
-                "entry_date": now_pacific.strftime("%Y-%m-%d %H:%M:%S"),
+                "entry_date": entry_date_str,
             }
         ), 201
     except Exception as e:
