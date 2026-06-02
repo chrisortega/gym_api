@@ -361,10 +361,10 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       const recent = await recentRes.json();
-      console.log(recent);
+
       const recentTbody = document.getElementById('recentEntriesTable');
       recentTbody.innerHTML = recent.map(e => {
-        const timeStr = new Date(e.day).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'PST' });
+        const timeStr = new Date(e.day).toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'PST' });
         return `
           <tr>
             <td class="ps-4 fw-medium">${e.name}</td>
