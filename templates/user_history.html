@@ -131,7 +131,7 @@
       document.getElementById("userName").textContent = data.name;
       document.getElementById("userGym").textContent = data.gym_name || "";
       document.getElementById("userPicture").src = data.image
-        ? `data:image/jpeg;base64,${data.image}`
+        ? `${data.image}`
         : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random&color=fff&size=200`;
 
       const expDate = new Date(data.exp);

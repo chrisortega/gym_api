@@ -177,7 +177,7 @@
       document.getElementById("editName").value = user.name || "";
       
       const avatar = document.getElementById("userAvatar");
-      avatar.src = user.image ? `data:image/jpeg;base64,${user.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=200`;
+      avatar.src = user.image ? `${user.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=200`;
 
       // Status & Expiration
       const expDate = user.exp ? new Date(user.exp) : null;
