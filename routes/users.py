@@ -7,6 +7,7 @@ from flask import Blueprint, request, jsonify
 from db import get_db
 from utils.auth import authenticate_token
 from PIL import Image
+from utils.s3_helper import upload_base64_to_s3, get_presigned_url
 
 users_bp = Blueprint("users", __name__)
 
@@ -20,22 +21,21 @@ def add_user():
     gym_id = data.get("gym_id")
     image_base64 = data.get("image")
 
-    #
-    # code image from base64 to binary if provided
-    image_blob = None
+    # upload image to S3 if provided
+    image_url = None
     if image_base64:
         try:
-            image_blob = base64.b64decode(image_base64)
+            image_url = upload_base64_to_s3(image_base64, folder="users")
         except Exception as e:
-            return jsonify({"error": "Invalid image encoding", "details": str(e)}), 400
+            return jsonify({"error": "Failed to upload image", "details": str(e)}), 400
 
     conn = get_db()
     cursor = conn.cursor()
 
-    if image_blob:
+    if image_url:
         cursor.execute(
             "INSERT INTO users (name, exp, gym_id, image) VALUES (%s, %s, %s, %s)",
-            (name, exp, gym_id, image_blob),
+            (name, exp, gym_id, image_url),
         )
     else:
         cursor.execute(
@@ -77,10 +77,8 @@ def get_user(user_id):
     )
     user = cursor.fetchone()
 
-    if user.get("image"):
-        user["image"] = base64.b64encode(user["image"]).decode("utf-8")
-    else:
-        user["image"] = None
+    if user:
+        user["image"] = get_presigned_url(user.get("image"))
 
     return jsonify(user or {}), 200
 
@@ -103,27 +101,7 @@ def get_users_by_gym(gym_id):
         users = cursor.fetchall()
 
         for user in users:
-            blob = user.get("image")
-
-            if blob:
-                try:
-                    # Convert blob → PIL image
-                    img = Image.open(io.BytesIO(blob))
-
-                    # Create tiny thumbnail
-                    img.thumbnail((48, 48))  # small & fast
-
-                    # Save back to bytes (compressed)
-                    buffer = io.BytesIO()
-                    img.save(buffer, format="JPEG", quality=35)
-                    tiny_bytes = buffer.getvalue()
-
-                    # Base64 encode thumbnail
-                    user["image"] = base64.b64encode(tiny_bytes).decode("utf-8")
-                except Exception:
-                    user["image"] = None
-            else:
-                user["image"] = None
+            user["image"] = get_presigned_url(user.get("image"))
 
         return jsonify(users), 200
 
@@ -144,19 +122,19 @@ def update_user(user_id):
     exp = data.get("exp")
     image_base64 = data.get("image")
 
-    image_blob = None
+    image_url = None
     if image_base64:
-        image_blob = base64.b64decode(image_base64)
+        image_url = upload_base64_to_s3(image_base64, folder="users")
 
     conn = get_db()
     cursor = conn.cursor()
 
-    if image_blob:
+    if image_url:
         cursor.execute(
             """
             UPDATE users SET name=%s, exp=%s, image=%s WHERE id=%s
         """,
-            (name, exp, image_blob, user_id),
+            (name, exp, image_url, user_id),
         )
     else:
         cursor.execute(
@@ -198,10 +176,7 @@ def get_public_user_history(user_id):
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        if user.get("image"):
-            user["image"] = base64.b64encode(user["image"]).decode("utf-8")
-        else:
-            user["image"] = None
+        user["image"] = get_presigned_url(user.get("image"))
 
         # Get entries
         cursor.execute(query_entries, (user_id,))

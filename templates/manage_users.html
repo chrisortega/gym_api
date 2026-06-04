@@ -178,7 +178,7 @@
         statusClass = "status-warning";
       }
 
-      const imgSrc = user.image ? `data:image/jpeg;base64,${user.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
+      const imgSrc = user.image ? `${user.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
 
       return `
         <tr class="user-row" onclick="window.location='/user?user_id=${user.id}'">

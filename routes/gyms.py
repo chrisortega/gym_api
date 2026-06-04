@@ -5,6 +5,7 @@ import base64
 from flask import Blueprint, request, jsonify
 from db import get_db
 from utils.auth import authenticate_token
+from utils.s3_helper import upload_file_to_s3, upload_base64_to_s3, get_presigned_url
 
 gyms_bp = Blueprint("gyms", __name__)
 
@@ -16,7 +17,11 @@ def get_gyms():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM gym")
-    return jsonify(cursor.fetchall()), 200
+    gyms = cursor.fetchall()
+    for gym in gyms:
+        gym["image"] = get_presigned_url(gym.get("image"))
+        gym["back"] = get_presigned_url(gym.get("back"))
+    return jsonify(gyms), 200
 
 
 @gyms_bp.route("/gym/<int:gym_id>", methods=["PUT"])
@@ -59,28 +64,32 @@ def update_gym(gym_id):
         # Handle logo image (file)
         if image_file:
             image_data = image_file.read()
-            updates.append("image = %s")
-            params.append(image_data)
+            s3_url = upload_file_to_s3(image_data, content_type=image_file.content_type, folder="gyms/logos")
+            if s3_url:
+                updates.append("image = %s")
+                params.append(s3_url)
         elif image_base64:
             try:
-                if ";base64," in image_base64:
-                    image_data = base64.b64decode(image_base64.split(";base64,")[1])
+                s3_url = upload_base64_to_s3(image_base64, folder="gyms/logos")
+                if s3_url:
                     updates.append("image = %s")
-                    params.append(image_data)
+                    params.append(s3_url)
             except Exception as e:
                 return jsonify({"error": f"Invalid image base64: {str(e)}"}), 400
 
         # Handle background image (file)
         if back_file:
             back_data = back_file.read()
-            updates.append("back = %s")
-            params.append(back_data)
+            s3_url = upload_file_to_s3(back_data, content_type=back_file.content_type, folder="gyms/backgrounds")
+            if s3_url:
+                updates.append("back = %s")
+                params.append(s3_url)
         elif back_base64:
             try:
-                if ";base64," in back_base64:
-                    back_data = base64.b64decode(back_base64.split(";base64,")[1])
+                s3_url = upload_base64_to_s3(back_base64, folder="gyms/backgrounds")
+                if s3_url:
                     updates.append("back = %s")
-                    params.append(back_data)
+                    params.append(s3_url)
             except Exception as e:
                 return jsonify({"error": f"Invalid back base64: {str(e)}"}), 400
 
@@ -120,17 +129,8 @@ def get_gym(gym_id):
         if not gym:
             return jsonify({"error": "Gym not found"}), 404
 
-        # Convert image (BLOB) to base64 if present
-        if gym.get("image"):
-            gym["image"] = base64.b64encode(gym["image"]).decode("utf-8")
-        else:
-            gym["image"] = None
-
-        # Convert image (BLOB) to base64 if present
-        if gym.get("back"):
-            gym["back"] = base64.b64encode(gym["back"]).decode("utf-8")
-        else:
-            gym["back"] = None
+        gym["image"] = get_presigned_url(gym.get("image"))
+        gym["back"] = get_presigned_url(gym.get("back"))
 
         return jsonify(gym), 200
 

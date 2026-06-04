@@ -131,7 +131,7 @@
         return true;
       }).forEach(user => {
         const count = entryCounts[user.user_id];
-        const imgSrc = user.image ? `data:image/jpeg;base64,${user.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
+        const imgSrc = user.image ? `${user.image}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
 
         container.innerHTML += `
           <tr style="cursor: pointer" onclick="window.location='/user?user_id=${user.user_id}'">

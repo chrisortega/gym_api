@@ -313,8 +313,8 @@
 
       document.getElementById("gymName").value = data.name || "";
       document.getElementById("gymCapacity").value = data.capacity || "";
-      if (data.image) document.getElementById("logoPreview").src = `data:image/jpeg;base64,${data.image}`;
-      if (data.back) document.getElementById("backPreview").src = `data:image/jpeg;base64,${data.back}`;
+      if (data.image) document.getElementById("logoPreview").src = `${data.image}`;
+      if (data.back) document.getElementById("backPreview").src = `${data.back}`;
     } catch (err) {
       errorAlert.textContent = "Error al cargar datos.";
       errorAlert.classList.remove("d-none");
